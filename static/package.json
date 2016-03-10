@@ -1,0 +1,12 @@
+{
+  "name": "flowly",
+  "version": "1.0.0",
+  "dependencies": {
+    "bower": "~1.7.7",
+    "gulp": "~3.9.1",
+    "gulp-sass": "~2.2.0",
+    "gulp-cli": "~1.2.1"
+  },
+  "author": "Oliver Bestmann",
+  "license": "MIT"
+}
