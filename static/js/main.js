@@ -1,30 +1,25 @@
 "use strict";
 
 class View {
+  constructor(...args) {
+    this.init(...args);
+    this.$root = this.render();
+    jQuery.data(this.$root, "__view", this);
+  }
+
+  init() {
+    // implement
+  }
+
   render() {
     return jQuery("<div>");
   }
 
-  update() {
-    // implement
-  }
+  appendTo(target) {
+    if (this.$root.parent().length)
+      throw new Error("View already attached");
 
-  updateOn(observable) {
-    if (this.subscription) {
-      this.subscription.cancel();
-    }
-
-    this.subscription = observable.delaySubscription(0).subscribe(value => this.update(value));
-  }
-
-  appendTo($parent) {
-    if (this.$root) {
-      throw new Error("Already rendered");
-    }
-
-    const view = this.render();
-    view.data("__view", this);
-    $parent.append(this.$root = view);
+    this.$root.appendTo(target);
   }
 
   static of(el) {
@@ -36,21 +31,9 @@ class View {
   }
 }
 
-class RxView extends View {
-  constructor(observable) {
-    super();
-    this.updateOn(value => this.update(value));
-  }
-
-  update(value) {
-    // do nothing with value.
-  }
-}
-
 class GraphNodeView extends View {
-  constructor(id) {
-    super();
-    this.id = id;
+  init(id) {
+    this._id = id;
     this._position = new Rx.BehaviorSubject();
   }
 
@@ -68,7 +51,8 @@ class GraphNodeView extends View {
     return view;
   }
 
-  update(value) {
+  get id() {
+    return this._id;
   }
 
   get position() {
@@ -93,11 +77,10 @@ class GraphEdgeView extends View {
   /**
    * Connects two positions
    *
-   * @param source
-   * @param target
+   * @param {Rx.Observable} source
+   * @param {Rx.Observable} target
    */
-  constructor(source, target) {
-    super();
+  init(source, target) {
     this._source = source.map(Vector.of);
     this._target = target.map(Vector.of);
   }
@@ -197,12 +180,12 @@ class NodeStore {
 }
 
 jQuery(() => {
-  const container = new GraphView();
-  container.appendTo(jQuery("body"));
+  const graph = new GraphView();
+  graph.appendTo(jQuery("body"));
 
   Rx.Observable.range(0, 5)
     .map(idx => new GraphNodeView(`node-${idx}`))
-    .doOnNext(node => container.addNode(node))
+    .doOnNext(node => graph.addNode(node))
     .toArray()
     .subscribe(nodes => {
       //noinspection UnnecessaryLocalVariableJS
@@ -210,7 +193,7 @@ jQuery(() => {
       [[a, c], [b, c], [c, d], [c, e]].forEach(pair => {
         //noinspection UnnecessaryLocalVariableJS
         const [first, second] = pair;
-        const edge = container.connect(first, second);
+        const edge = graph.connect(first, second);
 
         const ping = () => {
           edge.addStream();
