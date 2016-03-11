@@ -4,6 +4,12 @@ class Vector {
     this.y = y;
   }
 
+  /**
+   * Adds two vectors.
+   *
+   * @param other Vector The other vector
+   * @returns {Vector}
+   */
   plus(other) {
     return new Vector(this.x + other.x, this.y + other.y);
   }
@@ -47,9 +53,30 @@ class Vector {
     return new Vector();
   }
 
-  static of(obj) {
-    const x = obj.x || obj.left || obj[0];
-    const y = obj.y || obj.top || obj[1];
+  static random() {
+    return Vector.polar(Math.random() * 2 * Math.PI, 1);
+  }
+
+  static polar(angle, radius = 1) {
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    return new Vector(x, y);
+  }
+
+  static of(obj, second) {
+    if (obj instanceof Vector)
+      return obj;
+
+    const x = obj.x !== undefined ? obj.x
+      : obj.left !== undefined ? obj.left
+      : typeof obj === "number" ? obj
+      : obj[0];
+
+    const y = obj.y !== undefined ? obj.y
+      : obj.top !== undefined ? obj.top
+      : second !== undefined ? second
+      : obj[1];
+
     if (x === undefined || y === undefined)
       throw new TypeError("Could not convert to vector", obj);
 

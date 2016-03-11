@@ -1,34 +1,10 @@
 "use strict";
 
-class View {
-  constructor(...args) {
-    this.init(...args);
-    this.$root = this.render();
-    jQuery.data(this.$root, "__view", this);
-  }
+function require(value, message) {
+  if (value === null || value === undefined)
+    throw new Error(message);
 
-  init() {
-    // implement
-  }
-
-  render() {
-    return jQuery("<div>");
-  }
-
-  appendTo(target) {
-    if (this.$root.parent().length)
-      throw new Error("View already attached");
-
-    this.$root.appendTo(target);
-  }
-
-  static of(el) {
-    const result = jQuery.data(el, "__view");
-    if (result === null || result === undefined)
-      throw new Error("No view on this element");
-
-    return result;
-  }
+  return value;
 }
 
 class GraphNodeView extends View {
@@ -38,38 +14,61 @@ class GraphNodeView extends View {
   }
 
   render() {
-    const view = jQuery(`<div class="graph__node">`);
+    const view = jQuery(`<div class="graph__node">`).css({left: 0, top: 0});
+
+    // the position of the node can be changed
+    let width, height;
     view.draggable({
-      drag: (event, ui) => this._position.onNext(ui.position)
+      start: (event, ui) => {
+        width = this.$root.width();
+        height = this.$root.height();
+      },
+      drag: (event, ui) => this._position.onNext({
+        // add offset to return the center of the node
+        x: ui.position.left + width / 2,
+        y: ui.position.top + height / 2
+      })
     });
 
-    // .draggable sets the position to relative, thats not what i want
-    view.css({position: "absolute"});
-
-    this._position.onNext(view.position());
-
-    return view;
+    // .draggable sets the position to relative, that's not what i want :/
+    return view.css({position: "absolute"});
   }
 
+  /**
+   * The id of this node.
+   * @returns {String}
+   */
   get id() {
     return this._id;
   }
 
-  get position() {
-    return this._position.filter(pos => pos !== undefined).map(pos => {
-      const width = this.$root.width();
-      const height = this.$root.height();
-      return new Vector(pos.left + width / 2, pos.top + height / 2);
-    })
+  /**
+   * Returns an observable with the current position of this node.
+   * @returns {Rx.Observable<Vector>}
+   */
+  get positionObservable() {
+    return this._position.filter(pos => pos !== undefined).map(Vector.of);
   }
 
-  set position(pos) {
+  /**
+   * Get the radius by using half of the maximum of height and width.
+   * @returns {number}
+   */
+  get radius() {
+    return Math.max(this.width, this.height) / 2;
+  }
+
+  /**
+   * Changes the position of this node. This will trigger a change in
+   * the position observable.
+   */
+  moveTo(pos) {
     const width = this.$root.width();
     const height = this.$root.height();
 
-    const target = Vector.of(pos).minus(new Vector(width / 2, height / 2));
-    this.$root.css({left: target.x, top: target.y});
-    this._position.onNext(this.$root.position());
+    const center = Vector.of(pos);
+    this.$root.css({left: center.x - width / 2, top: center.y - height / 2});
+    this._position.onNext(center);
   }
 }
 
@@ -102,10 +101,12 @@ class GraphEdgeView extends View {
     return view;
   }
 
-  addStream(duration = 2000) {
-    const $packet = jQuery(`<div class="graph__edge__packet">`)
-      .css("transition-duration", duration + "ms")
-      .appendTo(this.$root);
+  ping(reversed = false, duration = 2000) {
+    const markup = `<div
+      class="graph__edge__packet graph__edge__packet--${reversed ? 'reverse' : 'normal'}"
+      style="transition-duration:${duration}ms"></div>`;
+
+    const $packet = jQuery(markup).appendTo(this.$root);
 
     // set the class after layout and rendering
     Rx.Observable.just($packet)
@@ -117,6 +118,15 @@ class GraphEdgeView extends View {
 }
 
 class GraphView extends View {
+  /**
+   * Initializes a new graph view.
+   *
+   * @param {StateStore} stateStore The state store to use for this graph
+   */
+  init(stateStore) {
+    this.stateStore = require(stateStore, "state store must be non-null");
+  }
+
   render() {
     const outer = jQuery(`<div class="graph">`);
     this.$edges = jQuery(`<div class="graph__edges">`).appendTo(outer);
@@ -124,14 +134,112 @@ class GraphView extends View {
     return outer;
   }
 
-  connect(first, second) {
-    const edge = new GraphEdgeView(first.position, second.position);
+  connect(firstId, secondId) {
+    const first = this.nodeOf(firstId);
+    const second = this.nodeOf(secondId);
+
+    const edge = new GraphEdgeView(first.positionObservable, second.positionObservable);
+    edge.$root.addClass(GraphView._edgeClass(first.id, second.id));
     edge.appendTo(this.$edges);
     return edge;
   }
 
-  addNode(node) {
+  /**
+   * Gets the edge css-class name for the given node ids.
+   * @param {String} first  the node id of the source node
+   * @param {String} second the node id of the target node
+   * @private
+   */
+  static _edgeClass(first, second) {
+    return `__edge--${first}--${second}`;
+  };
+
+  /**
+   * Gets the node css-class name for the given node id.
+   * @param {String} id the node id
+   * @private
+   */
+  static _nodeClass(id) {
+    return `__node--${id}`;
+  }
+
+  addNode(node, position = this.stateStore.positionOf(node.id)) {
+    node.$root.addClass(GraphView._nodeClass(node.id));
     node.appendTo(this.$nodes);
+
+    // maybe move node to the stored position
+    if (position !== undefined) {
+      node.moveTo(position);
+    }
+
+    // sync the position back to the store
+    node.positionObservable.debounce(100).subscribe(pos => {
+      this.stateStore.positionOf(node.id, pos);
+      this.stateStore.persist();
+    });
+  }
+
+  /**
+   * Looks for the edge
+   * @param {String} sourceId The id of the source node
+   * @param {String} targetId The id of the target node
+   * @returns {Array<GraphEdgeView, Boolean>}
+   */
+  edgeOf(sourceId, targetId) {
+    const forward = this.$edges.children("." + GraphView._edgeClass(sourceId, targetId));
+    if (forward.length) {
+      return [View.of(forward), false];
+
+    } else {
+      const reverse = this.$edges.children("." + GraphView._edgeClass(targetId, sourceId));
+      if (reverse.length) {
+        return [View.of(reverse), true];
+      }
+    }
+
+    return [null, false];
+  }
+
+  nodeOf(nodeId) {
+    if (nodeId instanceof GraphNodeView)
+      return nodeId;
+
+    if (nodeId === undefined || nodeId === null)
+      return null;
+
+    const nodes = this.$nodes.children("." + GraphView._nodeClass(nodeId));
+    return nodes.length ? View.of(nodes) : null;
+  }
+
+  getOrCreateNode(nodeId, nearNodeId) {
+    const existingNode = this.nodeOf(nodeId);
+    if (existingNode !== null)
+      return existingNode;
+
+    // generate a random position for the new node.
+    const position = this.stateStore.positionOf(nodeId) || (() => {
+        const nearNode = this.nodeOf(nearNodeId);
+        if (nearNode !== null) {
+          const offset = Vector.random().normalized.scaled(3 * nearNode.radius);
+          return nearNode.position.plus(offset);
+        }
+      })();
+
+    // ok, create a new node
+    const node = new GraphNodeView(nodeId);
+    this.addNode(node, position);
+
+    return node;
+  }
+
+  getOrCreateEdge(sourceId, targetId) {
+    const [edge, reversed] = this.edgeOf(sourceId, targetId);
+    if (edge !== null)
+      return [edge, reversed];
+
+    const source = this.getOrCreateNode(sourceId);
+    const target = this.getOrCreateNode(targetId, sourceId);
+    return [this.connect(source, target), false];
   }
 
   get nodes() {
@@ -142,69 +250,73 @@ class GraphView extends View {
 /**
  * Helper class to save and restore the position of nodes
  */
-class NodeStore {
-  constructor(graphId = "default") {
-    this.positions = {};
+class StateStore {
+  constructor(graphId, state = {}) {
     this.graphId = graphId;
+    this.state = state;
+
+    // initialize "format"
+    this.state.positions = this.state.positions || {};
   }
 
-  storeOnChange(nodes) {
-    Rx.Observable.fromArray(nodes)
-      .flatMap(node => node.position.debounce(100).distinctUntilChanged())
-      .flatMapLatest(change => NodeStore.positions(nodes))
-      .map(JSON.stringify)
-      .subscribe(positions => localStorage.setItem(`nodes:pos:${this.graphId}`, positions));
-  }
-
-  restore(nodes) {
-    const positions = JSON.parse(localStorage.getItem(`nodes:pos:${this.graphId}`) || "{}");
-    nodes.forEach(node => {
-      const pos = positions[node.id];
-      if (pos !== undefined) {
-        node.position = pos;
-      }
-    });
+  persist() {
+    StateStore._persist(this.graphId, this.state);
   }
 
   /**
-   * Accumulates the current positions of all the nodes in the graph.
+   * Returns the position of the given node as a {Vector} or
+   * stores the provided position. If no position is known, this method
+   * returns undefined.
+   * @returns {Vector, undefined}
    */
-  static positions(nodes) {
-    return Rx.Observable.fromArray(nodes)
-      .flatMap(node => node.position.take(1).map(pos => ({node: node, pos: pos})))
-      .reduce((acc, {node, pos}) => {
-        acc[node.id] = [pos.x, pos.y];
-        return acc;
-      }, {});
+  positionOf(nodeId, newValue) {
+    if (newValue === undefined) {
+      const pos = this.state.positions[nodeId];
+      return pos !== undefined && Vector.of(pos);
+    } else {
+      const pos = Vector.of(newValue);
+      this.state.positions[nodeId] = [pos.x, pos.y];
+    }
+  }
+
+  static _load(graphId) {
+    const serialized = localStorage.getItem(`graph.states.${graphId}`) || "{}";
+    return JSON.parse(serialized);
+  }
+
+  static _persist(graphId, state) {
+    const serialized = JSON.stringify(state);
+    localStorage.setItem(`graph.states.${graphId}`, serialized);
+  }
+
+  static restore(graphId) {
+    return new StateStore(graphId, this._load(graphId));
   }
 }
 
 jQuery(() => {
-  const graph = new GraphView();
+  const graph = new GraphView(StateStore.restore("test"));
   graph.appendTo(jQuery("body"));
 
-  Rx.Observable.range(0, 5)
-    .map(idx => new GraphNodeView(`node-${idx}`))
-    .doOnNext(node => graph.addNode(node))
-    .toArray()
-    .subscribe(nodes => {
-      //noinspection UnnecessaryLocalVariableJS
-      const [a,b,c,d,e] = nodes;
-      [[a, c], [b, c], [c, d], [c, e]].forEach(pair => {
-        //noinspection UnnecessaryLocalVariableJS
-        const [first, second] = pair;
-        const edge = graph.connect(first, second);
+  const traffic = Rx.Observable.merge(
+    Rx.Observable.interval(120).map(_ => ({
+      source: `node-${5 + parseInt(Math.random() * 5)}`,
+      target: `node-${parseInt(Math.random() * 2)}`
+    })),
+    Rx.Observable.interval(50).map(_ => ({
+      source: `node-${parseInt(Math.random() * 2)}`,
+      target: `node-${10 + parseInt(Math.random() * 4)}`
+    })),
+    Rx.Observable.interval(200).delay(500).map(_ => ({
+      source: `node-${10 + parseInt(Math.random() * 2)}`,
+      target: `node-${15 + parseInt(Math.random() * 2)}`
+    })))
+    .filter(item => item.source !== item.target);
 
-        const ping = () => {
-          edge.addStream();
-          setTimeout(ping, 500 * Math.random() + 250);
-        };
+  traffic.subscribe(ping => {
+    // const [edge, reversed] = graph.edgeOf(ping.source, ping.target);
 
-        ping();
-      });
-
-      const nodeStore = new NodeStore();
-      nodeStore.restore(nodes);
-      nodeStore.storeOnChange(nodes);
-    });
+    const [edge, reversed] = graph.getOrCreateEdge(ping.source, ping.target);
+    edge.ping(reversed);
+  });
 });

@@ -19,6 +19,7 @@
   "dependencies": {
     "jquery": "^2.2.1",
     "rxjs": "^4.1.0",
-    "jquery-ui": "^1.11.4"
+    "jquery-ui": "^1.11.4",
+    "rxjs-dom": "rx-dom#^7.0.3"
   }
 }

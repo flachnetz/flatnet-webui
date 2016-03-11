@@ -1,8 +1,12 @@
 @import "colors"
 
 $node-radius: 4em
+
 $edge-width: 0.2em
 $edge-packet-width: 8px
+
+$edge-packet-color-1: $color-accent
+$edge-packet-color-2: $color-accent
 
 .graph
   position: relative
@@ -33,7 +37,9 @@ $edge-packet-width: 8px
 
   height: $edge-width
   background: rgba($color-primary-dark, 0.5)
-  overflow: hidden
+
+  // not using "hidden" reduces cpu/gpu usage by 50%
+  // overflow: hidden
 
   transform-origin: 0 50%
   transform: rotate(10deg)
@@ -44,9 +50,13 @@ $edge-packet-width: 8px
   left: 0
   height: 100%
   width: $edge-packet-width
-  background: $color-accent
-
   transition: left linear
 
-  &--on
+  background: $color-accent
+
+  &--on, &--reverse
     left: 100%
+
+  &--reverse#{&}--on
+    left: 0
+
