@@ -1,1 +1,5 @@
-package flowly
+package main
+
+func main() {
+
+}
