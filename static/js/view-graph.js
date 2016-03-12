@@ -151,12 +151,15 @@
       Rx.DOM.mousedown(nodes)
         .filter(event => event.target === nodes)
         .flatMap(event => Rx.DOM.mousemove(nodes)
+
+          // stop on mouse up
           .takeUntil(Rx.Observable.merge(
             Rx.DOM.mouseup(nodes),
-            Rx.DOM.mouseleave(nodes)))
-          .map(event => new Vector(event.offsetX, event.offsetY))
-          .pairwise()
-          .map(([prev, next]) => next.minus(prev)))
+            Rx.DOM.mouseleave(nodes))))
+
+        // convert to delta vector
+        .map(event => new Vector(event.movementX, event.movementY))
+
         .subscribe(delta => {
           this.nodes
             .map(node => [node, node.position.plus(delta)])
