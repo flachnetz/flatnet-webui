@@ -4,8 +4,12 @@ class View {
   constructor(...args) {
     this.init(...args);
 
-    this.$root = this.render();
+    this.$root = jQuery(this.render());
+    if (this.$root.length !== 1)
+      throw new Error("render() must return exactly one element");
+
     this.$root.data("__view", this);
+    this.root = this.$root[0];
   }
 
   /**
@@ -36,11 +40,22 @@ class View {
   }
 
   /**
+   * Changes the position of this node.
+   */
+  moveTo(pos) {
+    const target = Vector.of(pos);
+    this.root.style.left = target.x + "px";
+    this.root.style.top = target.y + "px";
+  }
+
+  /**
    * Returns the position of this view.
    * @returns {Vector}
    */
   get position() {
-    return Vector.of(this.$root.position());
+    return new Vector(
+      parseFloat(this.root.style.left || 0),
+      parseFloat(this.root.style.top || 0));
   }
 
   /**
@@ -48,7 +63,7 @@ class View {
    * @returns {Number}
    */
   get width() {
-    return this.$root.width();
+    return this.root.offsetWidth;
   }
 
   /**
@@ -56,7 +71,12 @@ class View {
    * @returns {Number}
    */
   get height() {
-    return this.$root.height();
+    return this.root.offsetHeight;
+  }
+
+  get size() {
+    const rect = this.root.getBoundingClientRect();
+    return new Vector(rect.width, rect.height);
   }
 
   static of(el) {

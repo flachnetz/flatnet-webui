@@ -1,5 +1,9 @@
 class Vector {
   constructor(x = 0, y = 0) {
+    if (typeof x !== "number" || typeof y !== "number") {
+      throw new Error("Invalid argument types");
+    }
+
     this.x = x;
     this.y = y;
   }

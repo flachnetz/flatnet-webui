@@ -14,9 +14,9 @@
       // the position of the node can be changed
       let width, height;
       view.draggable({
-        start: (event, ui) => {
-          width = this.$root.width();
-          height = this.$root.height();
+        start: () => {
+          width = this.width;
+          height = this.height;
         },
         drag: (event, ui) => this._position.onNext({
           // add offset to return the center of the node
@@ -54,15 +54,20 @@
     }
 
     /**
+     * Returns the position of this node.
+     * @returns {Vector}
+     */
+    get position() {
+      return super.position.plus(this.size.scaled(0.5));
+    }
+
+    /**
      * Changes the position of this node. This will trigger a change in
      * the position observable.
      */
     moveTo(pos) {
-      const width = this.$root.width();
-      const height = this.$root.height();
-
       const center = Vector.of(pos);
-      this.$root.css({left: center.x - width / 2, top: center.y - height / 2});
+      super.moveTo(center.minus(this.size.scaled(0.5)));
       this._position.onNext(center);
     }
   }
@@ -126,6 +131,23 @@
       const outer = jQuery(`<div class="graph">`);
       this.$edges = jQuery(`<div class="graph__edges">`).appendTo(outer);
       this.$nodes = jQuery(`<div class="graph__nodes">`).appendTo(outer);
+
+      const nodes = this.$nodes.get(0);
+      Rx.DOM.mousedown(nodes)
+        .filter(event => event.target === nodes)
+        .flatMap(event => Rx.DOM.mousemove(nodes)
+          .takeUntil(Rx.Observable.merge(
+            Rx.DOM.mouseup(nodes),
+            Rx.DOM.mouseleave(nodes)))
+          .map(event => new Vector(event.offsetX, event.offsetY))
+          .pairwise()
+          .map(([prev, next]) => next.minus(prev)))
+        .subscribe(delta => {
+          this.nodes.forEach(node => {
+            node.moveTo(node.position.plus(delta));
+          });
+        });
+
       return outer;
     }
 
