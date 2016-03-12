@@ -294,28 +294,93 @@ class StateStore {
   }
 }
 
+class BlockedTrafficSource {
+  constructor() {
+  }
+
+  get traffic() {
+    return this.blocks.flatMap(packet => {
+      const count = this.pingCount(packet);
+      const duration = this.durationOf(packet);
+      if(count === 0) {
+        return Rx.Observable.empty();
+      } else if (count === 1) {
+        return Rx.Observable.just(packet);
+      } else {
+        return Rx.Observable.zip(
+          Rx.Observable.interval(duration / count),
+          Rx.Observable.range(0, count),
+          () => ({source: packet.source, target: packet.target}));
+      }
+    });
+  }
+
+  pingCount(packet) {
+    return 5;
+  }
+
+  durationOf(packet) {
+    return 1000;
+  }
+}
+
+class DummyTrafficSource {
+  get traffic() {
+    return Rx.Observable.merge(
+      Rx.Observable.interval(120).map(_ => ({
+        source: `node-${5 + parseInt(Math.random() * 5)}`,
+        target: `node-${parseInt(Math.random() * 2)}`
+      })),
+      Rx.Observable.interval(50).map(_ => ({
+        source: `node-${parseInt(Math.random() * 2)}`,
+        target: `node-${10 + parseInt(Math.random() * 4)}`
+      })),
+      Rx.Observable.interval(200).delay(500).map(_ => ({
+        source: `node-${10 + parseInt(Math.random() * 2)}`,
+        target: `node-${15 + parseInt(Math.random() * 2)}`
+      })))
+      .filter(item => item.source !== item.target);
+  }
+}
+
+class DummyBlockedTrafficSource extends BlockedTrafficSource {
+  get blocks() {
+    return Rx.Observable.merge(
+      Rx.Observable.interval(1000).map(_ => ({
+        source: `node-${5 + parseInt(Math.random() * 5)}`,
+        target: `node-${parseInt(Math.random() * 2)}`,
+        count: parseInt(2 + 3*Math.random())
+      })),
+      Rx.Observable.interval(1000).map(_ => ({
+        source: `node-${parseInt(Math.random() * 2)}`,
+        target: `node-${10 + parseInt(Math.random() * 4)}`
+      })),
+      Rx.Observable.interval(1000).delay(500).map(_ => ({
+        source: `node-${10 + parseInt(Math.random() * 2)}`,
+        target: `node-${15 + parseInt(Math.random() * 2)}`
+      })))
+      .filter(item => item.source !== item.target);
+  }
+
+  pingCount(packet) {
+    return packet.count || 5;
+  }
+}
+
+class WebsocketTrafficSource extends BlockedTrafficSource {
+  constructor(uri = `ws://${location.host}/${location.pathname}/traffic`) {
+    super();
+    this.blocks = Rx.DOM.fromWebSocket(uri)
+      .retryWhen(() => Rx.Observable.timer(5000));
+  }
+}
+
 jQuery(() => {
   const graph = new GraphView(StateStore.restore("test"));
   graph.appendTo(jQuery("body"));
 
-  const traffic = Rx.Observable.merge(
-    Rx.Observable.interval(120).map(_ => ({
-      source: `node-${5 + parseInt(Math.random() * 5)}`,
-      target: `node-${parseInt(Math.random() * 2)}`
-    })),
-    Rx.Observable.interval(50).map(_ => ({
-      source: `node-${parseInt(Math.random() * 2)}`,
-      target: `node-${10 + parseInt(Math.random() * 4)}`
-    })),
-    Rx.Observable.interval(200).delay(500).map(_ => ({
-      source: `node-${10 + parseInt(Math.random() * 2)}`,
-      target: `node-${15 + parseInt(Math.random() * 2)}`
-    })))
-    .filter(item => item.source !== item.target);
-
+  const traffic = new WebsocketTrafficSource().traffic;
   traffic.subscribe(ping => {
-    // const [edge, reversed] = graph.edgeOf(ping.source, ping.target);
-
     const [edge, reversed] = graph.getOrCreateEdge(ping.source, ping.target);
     edge.ping(reversed);
   });
