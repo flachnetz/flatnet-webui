@@ -126,7 +126,7 @@
       // set the class after layout and rendering
       Rx.Observable.just($packet)
         .delay(100)
-        .doOnNext(() => $packet.addClass("graph__edge__packet--on"))
+        .doOnNext(() => $packet[0].classList.add("graph__edge__packet--on"))
         .delay(100 + duration)
         .subscribe(() => $packet.remove());
     }
@@ -176,7 +176,7 @@
       const second = this.nodeOf(secondId);
 
       const edge = new GraphEdgeView(first.positionObservable, second.positionObservable);
-      edge.$root.addClass(GraphView._edgeClass(first.id, second.id));
+      edge.root.classList.add(GraphView._edgeClass(first.id, second.id));
       edge.appendTo(this.$edges);
       return edge;
     }
@@ -206,7 +206,7 @@
     }
 
     addNode(node, position = this._defaultNodePosition(node)) {
-      node.$root.addClass(GraphView._nodeClass(node.id));
+      node.root.classList.add(GraphView._nodeClass(node.id));
       node.appendTo(this.$nodes);
 
       // maybe move node to the stored position
