@@ -6,6 +6,7 @@
     init(id) {
       this._id = id;
       this._position = new Rx.BehaviorSubject();
+      this._size = undefined;
     }
 
     render() {
@@ -59,6 +60,20 @@
      */
     get position() {
       return super.position.plus(this.size.scaled(0.5));
+    }
+
+    get width() {
+      return this.size.x;
+    }
+
+    get height() {
+      return this.size.y;
+    }
+
+    get size() {
+      return this._size !== undefined
+        ? this._size
+        : this._size = super.size;
     }
 
     /**
@@ -143,9 +158,11 @@
           .pairwise()
           .map(([prev, next]) => next.minus(prev)))
         .subscribe(delta => {
-          this.nodes.forEach(node => {
-            node.moveTo(node.position.plus(delta));
-          });
+          this.nodes
+            .map(node => [node, node.position.plus(delta)])
+            .forEach(([node, pos]) => {
+              node.moveTo(pos);
+            });
         });
 
       return outer;
