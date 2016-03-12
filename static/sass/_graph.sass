@@ -1,12 +1,14 @@
 @import "colors"
 
-$node-radius: 4em
+$node-radius: 4rem
 
-$edge-width: 0.2em
+$edge-width: 0.2rem
 $edge-packet-width: 8px
 
 $edge-packet-color-1: $color-accent
 $edge-packet-color-2: $color-accent
+
+@import url(https://fonts.googleapis.com/css?family=PT+Sans+Narrow)
 
 .graph
   position: relative
@@ -23,18 +25,20 @@ $edge-packet-color-2: $color-accent
   display: block
   box-sizing: border-box
 
-  width: 4em
-  height: 4em
+  width: $node-radius
+  height: $node-radius
 
   // center text
-  line-height: 4em - 2*$edge-width
+  line-height: 4rem - 2*$edge-width
   text-align: center
 
   background: $color-primary-dark
   border: $color-primary solid $edge-width
-  border-radius: 10em
-
+  border-radius: 10rem
   cursor: pointer
+
+  font-family: "PT Sans Narrow", sans-serif
+  font-size: 75%
 
 .graph__edge
   position: absolute
