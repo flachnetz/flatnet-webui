@@ -55,8 +55,6 @@ class WebsocketTrafficSource extends ChunkedTrafficSource {
         .doOnNext(error => console.log("Websocket error, reconnecting shortly:", error))
         .delay(1000))
 
-      .tap(rxDebug())
-
       .share();
   }
 }

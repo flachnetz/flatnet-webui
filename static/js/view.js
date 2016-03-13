@@ -9,6 +9,8 @@ class View {
      */
     this.$root = this.render();
     this.$root.__view = this;
+
+    this.added = false;
   }
 
   /**
@@ -31,7 +33,24 @@ class View {
    * @param {Element} target The target to append to.
    */
   appendTo(target) {
+    if (this.added)
+      throw new Error("View already added once");
+
     target.appendChild(this.$root);
+    this.added = true;
+  }
+
+  /**
+   * Removes this node from the dom.
+   * This might destroy all kind of stuff and the node shouldn't be added
+   * back to the dom.
+   */
+  destroy() {
+    const parent = this.$root.parentNode;
+    if (parent) {
+      parent.removeChild(this.$root);
+      this.$root.__view = null;
+    }
   }
 
   /**

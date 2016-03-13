@@ -34,6 +34,11 @@
       return el;
     }
 
+    destroy() {
+      super.destroy();
+      this._position.onCompleted();
+    }
+
     /**
      * The id of this node.
      * @returns {String}
@@ -125,17 +130,26 @@
 
     render() {
       const view = createElement("div", "graph__edge");
-      this._source.combineLatest(this._target).subscribe(args => {
-        const [source, target] = args;
-        const angle = source.angleTo(target);
-        const length = source.distanceTo(target);
 
-        const st = view.style;
-        st.top = `${source.y}px`;
-        st.left = `${source.x}px`;
-        st.width = `${length}px`;
-        st.transform = `rotate(${angle}rad)`;
-      });
+      const closer = Rx.Observable.merge(
+          this._source.ignoreElements().concat(Rx.Observable.just(true)),
+          this._target.ignoreElements().concat(Rx.Observable.just(true)));
+
+      Rx.Observable.combineLatest(this._source, this._target)
+        .takeUntil(closer)
+
+        .finally(() => this.destroy())
+        .subscribe(args => {
+          const [source, target] = args;
+          const angle = source.angleTo(target);
+          const length = source.distanceTo(target);
+
+          const st = view.style;
+          st.top = `${source.y}px`;
+          st.left = `${source.x}px`;
+          st.width = `${length}px`;
+          st.transform = `rotate(${angle}rad)`;
+        });
 
       return view;
     }
@@ -164,6 +178,7 @@
      */
     init(stateStore) {
       this.stateStore = require(stateStore, "state store must be non-null");
+      this._manualSelectionUpdates = new Rx.Subject();
     }
 
     render() {
@@ -175,8 +190,29 @@
       this.$selection.style.display = "none";
 
       this._setupMoveEventListeners($outer);
+      this._setupKeyboardEventListeners($outer);
 
       return $outer;
+    }
+
+    /**
+     * Registers key events.
+     *
+     * @param {Element} $outer The outermost layer in the markup
+     * @private
+     */
+    _setupKeyboardEventListeners($outer) {
+      Rx.DOM.keypress(document)
+        .filter(event => event.code === "KeyR" || event.code === "Delete")
+        .flatMap(this.rxSelection.take(1))
+        .subscribe(nodes => {
+          this._clearSelection();
+          nodes.forEach(node => node.destroy());
+        });
+    }
+
+    _clearSelection() {
+      this._manualSelectionUpdates.onNext([]);
     }
 
     /**
@@ -236,6 +272,8 @@
 
           // only get the last selection
           .last({defaultValue: []}))
+
+        .merge(this._manualSelectionUpdates)
 
         // start with an empty selection
         .publishValue([]);
@@ -409,7 +447,7 @@
      * @returns {Array<GraphNodeView>}
      */
     get nodes() {
-      return Array.from(this.$nodes.childNodes).map(View.of);
+      return Array.from(this.$nodes.childNodes, View.of);
     }
   }
 
