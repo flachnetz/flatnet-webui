@@ -8,7 +8,14 @@ function require(value, message) {
 }
 
 jQuery.fn.extend({
-  dom: function() {
+  dom: function () {
     return this[0];
   }
 });
+
+function rxDebug() {
+  return Rx.Observer.create(
+    (value) => console.log("on next: ", value),
+    (error) => console.log("on error", error),
+    () => console.log("on complete"));
+}

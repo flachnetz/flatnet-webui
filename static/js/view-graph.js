@@ -9,24 +9,7 @@
     }
 
     render() {
-      const view = jQuery(`<div class="graph__node">`);
-
-      // the position of the node can be changed
-      let width, height;
-      view.draggable({
-        start: () => {
-          width = this.width;
-          height = this.height;
-        },
-        drag: (event, ui) => this._position.onNext({
-          // add offset to return the center of the node
-          x: ui.position.left + width / 2,
-          y: ui.position.top + height / 2
-        })
-      });
-
-      // .draggable sets the position to relative, that's not what i want :/
-      return view.css({position: "absolute"}).text(this.id);
+      return jQuery(`<div class="graph__node">`).text(this.id);
     }
 
     /**
@@ -81,6 +64,18 @@
 
     set alias(alias) {
       this.root.innerText = alias;
+    }
+
+    get selected() {
+      return this.root.classList.contains("graph__node--selected");
+    }
+
+    set selected(selected) {
+      if (selected) {
+        this.root.classList.add("graph__node--selected");
+      } else {
+        this.root.classList.remove("graph__node--selected");
+      }
     }
 
     /**
@@ -159,12 +154,32 @@
       const nodes = this.$nodes.get(0);
       const outer = $outer.dom();
 
-      this.rxSelection = Rx.DOM.mousedown(outer)
-        .filter(event => event.button === 1)
+      const rxMousedown = Rx.DOM.mousedown(outer);
+
+      rxMousedown
+        .filter(event => event.button === 0 && event.target.classList.contains("graph__node--selected"))
+        .flatMap(event => Rx.DOM.mousemove(outer)
+
+          // stop on mouse up
+          .takeUntil(Rx.Observable.merge(Rx.DOM.mouseup(outer)))
+
+          // convert to delta vector
+          .map(event => new Vector(event.movementX, event.movementY))
+
+          // and move the graph using this vector.
+          .withLatestFrom(this.rxSelection))
+
+        .subscribe(([delta, nodes]) => this.moveNodesBy(delta, nodes));
+
+      this.rxSelection = rxMousedown
+        .filter(event => event.button === 0 && (event.target.matches(":not(.graph__node), .graph__node:not(.graph__node--selected)")))
+
         .flatMap(down => Rx.DOM.mousemove(outer)
 
           // stop on mouse up
-          .takeUntil(Rx.DOM.mouseup(outer))
+          .takeUntil(Rx.Observable.merge(
+            Rx.DOM.mouseup(outer),
+            Rx.DOM.mouseleave(outer)))
 
           // calculate bounding box from "start" and "current" coordinate.
           .map(event => Rect.bboxOf(
@@ -172,7 +187,7 @@
             new Vector(event.clientX, event.clientY)))
 
           // start with an empty bounding box
-          .startWith(Rect.empty())
+          .startWith(Rect.empty(new Vector(down.clientX, down.clientY)))
 
           // reflect state in view
           .doOnNext(bbox => {
@@ -194,37 +209,31 @@
           .last({defaultValue: []}))
 
         // start with an empty selection
-        .startWith([])
-        .share();
+        .publishValue([]);
 
-      Rx.DOM.mousedown(nodes)
-        .filter(event => event.target === nodes && event.button === 0)
-        .flatMap(event => Rx.DOM.mousemove(outer)
-
-          // stop on mouse up
-          .takeUntil(Rx.Observable.merge(
-            Rx.DOM.mouseup(outer),
-            Rx.DOM.mouseleave(outer))))
-
-        // convert to delta vector
-        .map(event => new Vector(event.movementX, event.movementY))
-
-        // and move the graph using this vector.
-        .combineLatest(this.rxSelection)
-        .subscribe(([delta, nodes]) => this.moveNodesBy(delta, nodes));
+      // eagerly connect
+      this.rxSelection.connect();
 
       return $outer;
     }
 
+    /**
+     * @param {Rect} bbox The bounding box for the selection
+     * @returns {Array<GraphNodeView>}
+     */
     applySelection(bbox) {
-      const bbStart = bbox.position;
-      const bbEnd = bbox.position.plus(bbox.size);
+      function selectionTest(node) {
+        return bbox.intersectsCircle(node.position, node.radius);
+      }
 
-      const selected = this.nodes.filter(node => bbox.contains(node.position));
-
-      this.$nodes.children().removeClass("graph__node--selected");
-      selected.forEach(node => node.root.classList.add("graph__node--selected"));
-      return selected;
+      return this.nodes.map(node => {
+        if (selectionTest(node)) {
+          node.selected = true;
+          return node;
+        } else {
+          node.selected = false;
+        }
+      }).filter(node => node);
     }
 
     /**

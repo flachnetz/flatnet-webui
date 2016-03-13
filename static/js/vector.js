@@ -60,7 +60,7 @@ class Vector {
     return Math.sqrt(this.x * this.x + this.y * this.y);
   }
 
-  get sqNorm() {
+  get normSq() {
     return this.x * this.x + this.y * this.y;
   }
 
@@ -98,6 +98,10 @@ class Vector {
    */
   get top() {
     return this.y;
+  }
+
+  get abs() {
+    return new Vector(Math.abs(this.x), Math.abs(this.y));
   }
 
   static origin() {

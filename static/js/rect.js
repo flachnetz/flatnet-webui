@@ -28,10 +28,27 @@ class Rect {
     return this.position.y + this.size.y;
   }
 
+  get center() {
+    return this.position.plus(this.size.scaled(0.5));
+  }
+
   contains(pos) {
     const point = Vector.of(pos);
     return this.x <= point.x && point.x <= this.right
       && this.y <= point.y && point.y <= this.bottom;
+  }
+
+  intersectsCircle(center, radius) {
+    const distance = center.minus(this.center).abs;
+    
+    const halfSize = this.size.scaled(0.5);
+    if (distance.x > halfSize.x + radius || distance.y > halfSize.y + radius)
+      return false;
+
+    if (distance.x <= halfSize.x || distance.y <= halfSize.y)
+      return true;
+
+    return distance.minus(halfSize).normSq <= radius * radius;
   }
 
   static bboxOf(first, second) {
