@@ -7,8 +7,8 @@ window.onload = () => {
   var source = new WebsocketTrafficSource();
 
   source.traffic.subscribe(ping => {
-    const [edge, reversed] = graph.getOrCreateEdge(ping.source, ping.target);
-    edge.ping(reversed);
+    const {edge, reverse} = graph.getOrCreateEdge(ping.source, ping.target);
+    edge.ping(reverse);
   });
 
   source.mapping.debounce(100).subscribe(mapping => {

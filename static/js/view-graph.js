@@ -16,7 +16,7 @@
    * @param {String} id the node id
    * @private
    */
-  function  _nodeClass(id) {
+  function _nodeClass(id) {
     return `__n${id}`;
   }
 
@@ -46,7 +46,7 @@
      * Returns an observable with the current position of this node.
      * @returns {Rx.Observable<Vector>}
      */
-    get positionObservable() {
+    get rxPosition() {
       return this._position.filter(pos => pos !== undefined).map(Vector.of);
     }
 
@@ -174,6 +174,17 @@
       this.$selection = createChildOf($outer, "div", "graph__selection");
       this.$selection.style.display = "none";
 
+      this._setupMoveEventListeners($outer);
+
+      return $outer;
+    }
+
+    /**
+     * Sets up the mouse event listeners.
+     * @param {Element} $outer The outermost layer in the markup.
+     * @private
+     */
+    _setupMoveEventListeners($outer) {
       Rx.DOM.mousedown($outer)
         .filter(event => event.button === 0 && event.target.classList.contains("graph__node--selected"))
         .flatMap(event => Rx.DOM.mousemove($outer)
@@ -231,9 +242,8 @@
 
       // eagerly connect
       this.rxSelection.connect();
-
-      return $outer;
     }
+
 
     /**
      * @param {Rect} bbox The bounding box for the selection
@@ -268,11 +278,14 @@
         });
     }
 
-    connect(firstId, secondId) {
-      const first = this.nodeOf(firstId);
-      const second = this.nodeOf(secondId);
-
-      const edge = new GraphEdgeView(first.positionObservable, second.positionObservable);
+    /**
+     * Connects two nodes
+     * @param {GraphNodeView} first The first node
+     * @param {GraphNodeView} second The second node.
+     * @returns {GraphEdgeView}
+     */
+    connect(first, second) {
+      const edge = new GraphEdgeView(first.rxPosition, second.rxPosition);
       edge.$root.classList.add(_edgeClass(first.id, second.id));
       edge.appendTo(this.$edges);
       return edge;
@@ -285,8 +298,8 @@
      * @private
      */
     _defaultNodePosition(node) {
-      return this.stateStore.positionOf(node.id)
-        || new Vector(this.width / 2, this.height / 2).plus(Vector.random().scaled(50 + 100 * Math.random()));
+      return this.stateStore.positionOf(node.id) || new Vector(this.width / 2, this.height / 2)
+          .plus(Vector.random().scaled(50 + 100 * Math.random()));
     }
 
     /**
@@ -298,39 +311,45 @@
       node.$root.classList.add(_nodeClass(node.id));
       node.appendTo(this.$nodes);
 
-      // maybe move node to the stored position
+      // move node to the provided position
       if (position !== undefined) {
         node.moveTo(position);
       }
 
-      // sync the position back to the store
-      node.positionObservable.debounce(100).subscribe(pos => {
+      // sync changes in the position back to the store
+      node.rxPosition.debounce(100).subscribe(pos => {
         this.stateStore.positionOf(node.id, pos);
         this.stateStore.persist();
       });
     }
 
     /**
-     * Looks for the edge
+     * Looks for the edge. Returns a tuple with a boolean indicating
+     * if the returned edge has the direction that was queried.
+     *
      * @param {String} sourceId The id of the source node
      * @param {String} targetId The id of the target node
-     * @returns {Array<GraphEdgeView, Boolean>}
+     * @returns {{edge: GraphEdgeView, reverse: boolean}}
      */
     edgeOf(sourceId, targetId) {
-      const forward = this.$edges.querySelector(":scope > ." + _edgeClass(sourceId, targetId));
+      const forward = this.$edges.querySelector(`:scope > .${_edgeClass(sourceId, targetId)}`);
       if (forward) {
-        return [View.of(forward), false];
+        return {edge: View.of(forward), reverse: false};
 
       } else {
-        const reverse = this.$edges.querySelector(":scope > ." + _edgeClass(targetId, sourceId));
+        const reverse = this.$edges.querySelector(`:scope > .${_edgeClass(targetId, sourceId)}`);
         if (reverse) {
-          return [View.of(reverse), true];
+          return {edge: View.of(reverse), reverse: true};
         }
       }
 
-      return [null, false];
+      return {edge: null, reverse: false};
     }
 
+    /**
+     * Finds and returns the node with the given id.
+     * @returns {GraphNodeView}
+     */
     nodeOf(nodeId) {
       if (nodeId instanceof GraphNodeView)
         return nodeId;
@@ -342,6 +361,12 @@
       return nodes ? View.of(nodes) : null;
     }
 
+    /**
+     * Gets a node by id or create a new one in the graph
+     * @param {String} nodeId Id of the new node.
+     * @param {String|undefined} nearNodeId Places a newly created node near this one.
+     * @returns {GraphNodeView}
+     */
     getOrCreateNode(nodeId, nearNodeId) {
       const existingNode = this.nodeOf(nodeId);
       if (existingNode !== null)
@@ -363,16 +388,26 @@
       return node;
     }
 
+    /**
+     * Gets an edge between nodes of the given ids.
+     * @param {String} sourceId Id of the source node
+     * @param {String} targetId Id of the second node
+     * @returns {{edge: GraphEdgeView, reverse: boolean}}
+     */
     getOrCreateEdge(sourceId, targetId) {
-      const [edge, reversed] = this.edgeOf(sourceId, targetId);
+      const {edge, reverse} = this.edgeOf(sourceId, targetId);
       if (edge !== null)
-        return [edge, reversed];
+        return {edge, reverse};
 
       const source = this.getOrCreateNode(sourceId);
       const target = this.getOrCreateNode(targetId, sourceId);
-      return [this.connect(source, target), false];
+      return {edge: this.connect(source, target), reverse: false}
     }
 
+    /**
+     * Array of all the nodes-
+     * @returns {Array<GraphNodeView>}
+     */
     get nodes() {
       return Array.from(this.$nodes.childNodes).map(View.of);
     }
