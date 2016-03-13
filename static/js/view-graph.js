@@ -1,6 +1,26 @@
 "use strict";
 
 (() => {
+  /**
+   * Gets the edge css-class name for the given node ids.
+   * @param {String} first  the node id of the source node
+   * @param {String} second the node id of the target node
+   * @private
+   */
+  function _edgeClass(first, second) {
+    return `__e${first}--${second}`;
+  };
+
+  /**
+   * Gets the node css-class name for the given node id.
+   * @param {String} id the node id
+   * @private
+   */
+  function  _nodeClass(id) {
+    return `__n${id}`;
+  }
+
+
   class GraphNodeView extends View {
     init(id) {
       this._id = id;
@@ -9,7 +29,9 @@
     }
 
     render() {
-      return jQuery(`<div class="graph__node">`).text(this.id);
+      const el = createElement("div", "graph__node");
+      el.innerText = this.id;
+      return el;
     }
 
     /**
@@ -59,22 +81,22 @@
     }
 
     get alias() {
-      return this.root.innerText;
+      return this.$root.innerText;
     }
 
     set alias(alias) {
-      this.root.innerText = alias;
+      this.$root.innerText = alias;
     }
 
     get selected() {
-      return this.root.classList.contains("graph__node--selected");
+      return this.$root.classList.contains("graph__node--selected");
     }
 
     set selected(selected) {
       if (selected) {
-        this.root.classList.add("graph__node--selected");
+        this.$root.classList.add("graph__node--selected");
       } else {
-        this.root.classList.remove("graph__node--selected");
+        this.$root.classList.remove("graph__node--selected");
       }
     }
 
@@ -102,35 +124,35 @@
     }
 
     render() {
-      const view = jQuery(`<div class="graph__edge">`);
+      const view = createElement("div", "graph__edge");
       this._source.combineLatest(this._target).subscribe(args => {
         const [source, target] = args;
         const angle = source.angleTo(target);
+        const length = source.distanceTo(target);
 
-        view.css({
-          top: source.y,
-          left: source.x,
-          width: source.distanceTo(target),
-          transform: `rotate(${angle}rad)`
-        });
+        const st = view.style;
+        st.top = `${source.y}px`;
+        st.left = `${source.x}px`;
+        st.width = `${length}px`;
+        st.transform = `rotate(${angle}rad)`;
       });
 
       return view;
     }
 
     ping(reversed = false, duration = 2000) {
-      const markup = `<div
-      class="graph__edge__packet graph__edge__packet--${reversed ? 'reverse' : 'normal'}"
-      style="transition-duration:${duration}ms"></div>`;
+      const $packet = createElement("div",
+        "graph__edge__packet",
+        `graph__edge__packet--${reversed ? 'reverse' : 'normal'}`);
 
-      const $packet = jQuery(markup).appendTo(this.$root);
+      $packet.style.transitionDuration = `${duration}ms`;
+      this.$root.appendChild($packet);
 
       // set the class after layout and rendering
-      Rx.Observable.just($packet)
-        .delay(100)
-        .doOnNext(() => $packet[0].classList.add("graph__edge__packet--on"))
+      Rx.Observable.timer(100)
+        .doOnNext(() => $packet.classList.add("graph__edge__packet--on"))
         .delay(100 + duration)
-        .subscribe(() => $packet.remove());
+        .subscribe(() => $packet.parentNode.removeChild($packet));
     }
   }
 
@@ -145,23 +167,19 @@
     }
 
     render() {
-      const $outer = jQuery(`<div class="graph">`);
-      this.$edges = jQuery(`<div class="graph__edges">`).appendTo($outer);
-      this.$nodes = jQuery(`<div class="graph__nodes">`).appendTo($outer);
+      const $outer = createElement("div", "graph");
+      this.$edges = createChildOf($outer, "div", "graph__edges");
+      this.$nodes = createChildOf($outer, "div", "graph__nodes");
 
-      this.$selection = jQuery(`<div class="graph__selection">`).hide().appendTo($outer);
+      this.$selection = createChildOf($outer, "div", "graph__selection");
+      this.$selection.style.display = "none";
 
-      const nodes = this.$nodes.get(0);
-      const outer = $outer.dom();
-
-      const rxMousedown = Rx.DOM.mousedown(outer);
-
-      rxMousedown
+      Rx.DOM.mousedown($outer)
         .filter(event => event.button === 0 && event.target.classList.contains("graph__node--selected"))
-        .flatMap(event => Rx.DOM.mousemove(outer)
+        .flatMap(event => Rx.DOM.mousemove($outer)
 
           // stop on mouse up
-          .takeUntil(Rx.Observable.merge(Rx.DOM.mouseup(outer)))
+          .takeUntil(Rx.Observable.merge(Rx.DOM.mouseup($outer)))
 
           // convert to delta vector
           .map(event => new Vector(event.movementX, event.movementY))
@@ -171,15 +189,16 @@
 
         .subscribe(([delta, nodes]) => this.moveNodesBy(delta, nodes));
 
-      this.rxSelection = rxMousedown
+      this.rxSelection = Rx.DOM.mousedown($outer)
+        // only start on not-selected nodes
         .filter(event => event.button === 0 && (event.target.matches(":not(.graph__node), .graph__node:not(.graph__node--selected)")))
 
-        .flatMap(down => Rx.DOM.mousemove(outer)
+        .flatMap(down => Rx.DOM.mousemove($outer)
 
           // stop on mouse up
           .takeUntil(Rx.Observable.merge(
-            Rx.DOM.mouseup(outer),
-            Rx.DOM.mouseleave(outer)))
+            Rx.DOM.mouseup($outer),
+            Rx.DOM.mouseleave($outer)))
 
           // calculate bounding box from "start" and "current" coordinate.
           .map(event => Rect.bboxOf(
@@ -191,19 +210,18 @@
 
           // reflect state in view
           .doOnNext(bbox => {
-            this.$selection.css({
-              display: "block",
-              top: bbox.position.y,
-              left: bbox.position.x,
-              width: bbox.size.width,
-              height: bbox.size.height
-            });
+            const st = this.$selection.style;
+            st.display = "block";
+            st.top = bbox.y + "px";
+            st.left = bbox.x + "px";
+            st.width = bbox.width + "px";
+            st.height = bbox.height + "px";
           })
 
           .map(bbox => this.applySelection(bbox))
 
           // hide at the end
-          .finally(() => this.$selection.hide())
+          .finally(() => this.$selection.style.display = "none")
 
           // only get the last selection
           .last({defaultValue: []}))
@@ -255,37 +273,29 @@
       const second = this.nodeOf(secondId);
 
       const edge = new GraphEdgeView(first.positionObservable, second.positionObservable);
-      edge.root.classList.add(GraphView._edgeClass(first.id, second.id));
+      edge.$root.classList.add(_edgeClass(first.id, second.id));
       edge.appendTo(this.$edges);
       return edge;
     }
 
     /**
-     * Gets the edge css-class name for the given node ids.
-     * @param {String} first  the node id of the source node
-     * @param {String} second the node id of the target node
+     * Gets the default position for a node
+     * @param {GraphNodeView} node The node to get the default position for.
+     * @returns {Vector}
      * @private
      */
-    static _edgeClass(first, second) {
-      return `__edge--${first}--${second}`;
-    };
-
-    /**
-     * Gets the node css-class name for the given node id.
-     * @param {String} id the node id
-     * @private
-     */
-    static _nodeClass(id) {
-      return `__node--${id}`;
-    }
-
     _defaultNodePosition(node) {
       return this.stateStore.positionOf(node.id)
         || new Vector(this.width / 2, this.height / 2).plus(Vector.random().scaled(50 + 100 * Math.random()));
     }
 
+    /**
+     * Adds the given node to the graph view.
+     * @param {GraphNodeView} node
+     * @param {Vector|*} position
+     */
     addNode(node, position = this._defaultNodePosition(node)) {
-      node.root.classList.add(GraphView._nodeClass(node.id));
+      node.$root.classList.add(_nodeClass(node.id));
       node.appendTo(this.$nodes);
 
       // maybe move node to the stored position
@@ -307,13 +317,13 @@
      * @returns {Array<GraphEdgeView, Boolean>}
      */
     edgeOf(sourceId, targetId) {
-      const forward = this.$edges.children("." + GraphView._edgeClass(sourceId, targetId));
-      if (forward.length) {
+      const forward = this.$edges.querySelector(":scope > ." + _edgeClass(sourceId, targetId));
+      if (forward) {
         return [View.of(forward), false];
 
       } else {
-        const reverse = this.$edges.children("." + GraphView._edgeClass(targetId, sourceId));
-        if (reverse.length) {
+        const reverse = this.$edges.querySelector(":scope > ." + _edgeClass(targetId, sourceId));
+        if (reverse) {
           return [View.of(reverse), true];
         }
       }
@@ -328,8 +338,8 @@
       if (nodeId === undefined || nodeId === null)
         return null;
 
-      const nodes = this.$nodes.children("." + GraphView._nodeClass(nodeId));
-      return nodes.length ? View.of(nodes) : null;
+      const nodes = this.$nodes.querySelector("." + _nodeClass(nodeId));
+      return nodes ? View.of(nodes) : null;
     }
 
     getOrCreateNode(nodeId, nearNodeId) {
@@ -364,7 +374,7 @@
     }
 
     get nodes() {
-      return this.$nodes.children().toArray().map(View.of);
+      return Array.from(this.$nodes.childNodes).map(View.of);
     }
   }
 

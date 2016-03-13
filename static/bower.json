@@ -17,7 +17,6 @@
     "tests"
   ],
   "dependencies": {
-    "jquery": "^2.2.1",
     "rxjs": "^4.1.0",
     "rxjs-dom": "rx-dom#^7.0.3"
   }

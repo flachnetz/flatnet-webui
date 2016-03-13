@@ -1,8 +1,8 @@
 "use strict";
 
-jQuery(() => {
+window.onload = () => {
   const graph = new GraphView(StateStore.restore("test"));
-  graph.appendTo(jQuery("body"));
+  graph.appendTo(document.body);
 
   var source = new WebsocketTrafficSource();
 
@@ -19,4 +19,4 @@ jQuery(() => {
       }
     });
   });
-});
+};

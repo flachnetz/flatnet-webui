@@ -28,7 +28,7 @@ class ChunkedTrafficSource {
     return this.chunks
       .filter(chunk => chunk.type === "mapping")
       .scan((mapping, chunk) => {
-        return jQuery.extend(mapping, chunk.mapping);
+        return Object.assign(mapping, chunk.mapping);
       }, {});
   }
 
