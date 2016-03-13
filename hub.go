@@ -5,21 +5,21 @@ type Hub struct {
   broadcast   chan []byte
 
   // all the currently registered connections
-  connections map[*connection]bool
+  connections map[*Connection]bool
 
   // register requests
-  register    chan *connection
+  register    chan *Connection
 
   // unregister requests
-  unregister  chan *connection
+  unregister  chan *Connection
 }
 
 func NewHub() *Hub {
   return &Hub{
     broadcast:   make(chan []byte),
-    register:    make(chan *connection),
-    unregister:  make(chan *connection),
-    connections: make(map[*connection]bool),
+    register:    make(chan *Connection),
+    unregister:  make(chan *Connection),
+    connections: make(map[*Connection]bool),
   }
 }
 

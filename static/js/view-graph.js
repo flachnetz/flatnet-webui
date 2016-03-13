@@ -76,6 +76,14 @@
         : this._size = super.size;
     }
 
+    get alias() {
+      return this.root.innerText;
+    }
+
+    set alias(alias) {
+      this.root.innerText = alias;
+    }
+
     /**
      * Changes the position of this node. This will trigger a change in
      * the position observable.
