@@ -6,3 +6,9 @@ function require(value, message) {
 
   return value;
 }
+
+jQuery.fn.extend({
+  dom: function() {
+    return this[0];
+  }
+});

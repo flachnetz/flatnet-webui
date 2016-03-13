@@ -1,10 +1,25 @@
 class Vector {
+  /**
+   *A simple vector class.
+   *
+   * @param {number} x first coordinate of this vector
+   * @param {number} y second coordinate of this vector
+   */
   constructor(x = 0, y = 0) {
     if (typeof x !== "number" || typeof y !== "number") {
       throw new Error("Invalid argument types");
     }
 
+    /**
+     * The x coordinate of this vector
+     * @type {number}
+     */
     this.x = x;
+
+    /**
+     * The y coordinate of this vector.
+     * @type {number}
+     */
     this.y = y;
   }
 
@@ -53,6 +68,38 @@ class Vector {
     return this.scaled(1 / this.norm);
   }
 
+  /**
+   * Alias for "x"
+   * @returns {number}
+   */
+  get width() {
+    return this.x;
+  }
+
+  /**
+   * Alias for "x"
+   * @returns {number}
+   */
+  get left() {
+    return this.x;
+  }
+
+  /**
+   * Alias for "y"
+   * @returns {number}
+   */
+  get height() {
+    return this.y;
+  }
+
+  /**
+   * Alias for "y"
+   * @returns {number}
+   */
+  get top() {
+    return this.y;
+  }
+
   static origin() {
     return new Vector();
   }
@@ -67,6 +114,10 @@ class Vector {
     return new Vector(x, y);
   }
 
+  /**
+   * Tries to convert the given arguments to a vector.
+   * @returns {Vector}
+   */
   static of(obj, second) {
     if (obj instanceof Vector)
       return obj;

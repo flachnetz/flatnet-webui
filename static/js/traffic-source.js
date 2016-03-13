@@ -57,7 +57,7 @@ class WebsocketTrafficSource extends ChunkedTrafficSource {
       // retry on errors
       .retryWhen(errors => errors
         .doOnNext(error => console.log("Websocket error, reconnecting shortly:", error))
-        .delay(5000))
+        .delay(1000))
 
       .share();
   }

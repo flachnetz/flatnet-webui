@@ -1,7 +1,6 @@
 "use strict";
 
 (() => {
-
   class GraphNodeView extends View {
     init(id) {
       this._id = id;
@@ -151,32 +150,95 @@
     }
 
     render() {
-      const outer = jQuery(`<div class="graph">`);
-      this.$edges = jQuery(`<div class="graph__edges">`).appendTo(outer);
-      this.$nodes = jQuery(`<div class="graph__nodes">`).appendTo(outer);
+      const $outer = jQuery(`<div class="graph">`);
+      this.$edges = jQuery(`<div class="graph__edges">`).appendTo($outer);
+      this.$nodes = jQuery(`<div class="graph__nodes">`).appendTo($outer);
+
+      this.$selection = jQuery(`<div class="graph__selection">`).hide().appendTo($outer);
 
       const nodes = this.$nodes.get(0);
+      const outer = $outer.dom();
+
+      this.rxSelection = Rx.DOM.mousedown(outer)
+        .filter(event => event.button === 1)
+        .flatMap(down => Rx.DOM.mousemove(outer)
+
+          // stop on mouse up
+          .takeUntil(Rx.DOM.mouseup(outer))
+
+          // calculate bounding box from "start" and "current" coordinate.
+          .map(event => Rect.bboxOf(
+            new Vector(down.clientX, down.clientY),
+            new Vector(event.clientX, event.clientY)))
+
+          // start with an empty bounding box
+          .startWith(Rect.empty())
+
+          // reflect state in view
+          .doOnNext(bbox => {
+            this.$selection.css({
+              display: "block",
+              top: bbox.position.y,
+              left: bbox.position.x,
+              width: bbox.size.width,
+              height: bbox.size.height
+            });
+          })
+
+          .map(bbox => this.applySelection(bbox))
+
+          // hide at the end
+          .finally(() => this.$selection.hide())
+
+          // only get the last selection
+          .last({defaultValue: []}))
+
+        // start with an empty selection
+        .startWith([])
+        .share();
+
       Rx.DOM.mousedown(nodes)
-        .filter(event => event.target === nodes)
-        .flatMap(event => Rx.DOM.mousemove(nodes)
+        .filter(event => event.target === nodes && event.button === 0)
+        .flatMap(event => Rx.DOM.mousemove(outer)
 
           // stop on mouse up
           .takeUntil(Rx.Observable.merge(
-            Rx.DOM.mouseup(nodes),
-            Rx.DOM.mouseleave(nodes))))
+            Rx.DOM.mouseup(outer),
+            Rx.DOM.mouseleave(outer))))
 
         // convert to delta vector
         .map(event => new Vector(event.movementX, event.movementY))
 
-        .subscribe(delta => {
-          this.nodes
-            .map(node => [node, node.position.plus(delta)])
-            .forEach(([node, pos]) => {
-              node.moveTo(pos);
-            });
-        });
+        // and move the graph using this vector.
+        .combineLatest(this.rxSelection)
+        .subscribe(([delta, nodes]) => this.moveNodesBy(delta, nodes));
 
-      return outer;
+      return $outer;
+    }
+
+    applySelection(bbox) {
+      const bbStart = bbox.position;
+      const bbEnd = bbox.position.plus(bbox.size);
+
+      const selected = this.nodes.filter(node => bbox.contains(node.position));
+
+      this.$nodes.children().removeClass("graph__node--selected");
+      selected.forEach(node => node.root.classList.add("graph__node--selected"));
+      return selected;
+    }
+
+    /**
+     * Moves nodes by the given delta. If the list of nodes is empty,
+     * all nodes will be moved.
+     * @param {Vector} delta
+     * @param {Array.<GraphNodeView>} nodes The nodes shall be moved
+     */
+    moveNodesBy(delta, nodes = []) {
+      (nodes.length ? nodes : this.nodes)
+        .map(node => [node, node.position.plus(delta)])
+        .forEach(([node, pos]) => {
+          node.moveTo(pos);
+        });
     }
 
     connect(firstId, secondId) {

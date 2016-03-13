@@ -1,12 +1,13 @@
 @import "colors"
 
-$node-radius: 4rem
-
 $edge-width: 0.2rem
 $edge-packet-width: 8px
-
 $edge-packet-color-1: $color-accent
 $edge-packet-color-2: $color-accent
+
+$node-radius: 4rem
+$node-border-width: 0.2rem
+$node-border-color: mix($color-primary, $color-primary-dark, 50%)
 
 @import url(https://fonts.googleapis.com/css?family=PT+Sans+Narrow)
 
@@ -34,30 +35,32 @@ $edge-packet-color-2: $color-accent
   white-space: nowrap
 
   background: $color-primary-dark
-  border: $color-primary solid $edge-width
+  border: $node-border-color solid $node-border-width
   border-radius: 10rem
   cursor: pointer
 
   font-family: "PT Sans Narrow", sans-serif
   font-size: 75%
 
+  &--selected
+    border-color: $color-accent
+
 .graph__edge
   position: absolute
 
-  height: $edge-width
+  height: $edge-width/3
   background: rgba($color-primary-dark, 0.5)
 
   // not using "hidden" reduces cpu/gpu usage by 50%
   // overflow: hidden
 
   transform-origin: 0 50%
-  transform: rotate(10deg)
 
 .graph__edge__packet
   position: absolute
-  top: 0
+  top: -$edge-width/3
   left: 0
-  height: 100%
+  height: $edge-width
   width: $edge-packet-width
   transition: left linear
 
@@ -69,3 +72,9 @@ $edge-packet-color-2: $color-accent
   &--reverse#{&}--on
     left: 0
 
+
+.graph__selection
+  position: absolute
+  background: rgba($color-accent, 0.25)
+  border: 1px solid rgba($color-accent, 0.75)
+  box-sizing: border-box
