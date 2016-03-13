@@ -9,7 +9,7 @@
    */
   function _edgeClass(first, second) {
     return `__e${first}--${second}`;
-  };
+  }
 
   /**
    * Gets the node css-class name for the given node id.

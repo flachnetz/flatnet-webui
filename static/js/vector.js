@@ -1,3 +1,5 @@
+"use strict";
+
 class Vector {
   /**
    *A simple vector class.

@@ -1,3 +1,5 @@
+"use strict";
+
 class Rect {
   constructor(position, size) {
     this.position = Vector.of(position);
