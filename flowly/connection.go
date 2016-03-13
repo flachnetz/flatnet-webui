@@ -1,16 +1,16 @@
-package main
+package flowly
 
 import (
   "log"
   "github.com/gorilla/websocket"
 )
 
-type Connection struct {
+type hubConnection struct {
   socket *websocket.Conn
   send   chan []byte
 }
 
-func (conn *Connection) writeLoop() {
+func (conn *hubConnection) writeLoop() {
   defer conn.socket.Close()
 
   for message := range conn.send {
@@ -25,7 +25,7 @@ func (conn *Connection) writeLoop() {
 /**
  * Reads all the messages of a websocket until it is closed.
  */
-func (conn *Connection) readLoop() {
+func (conn *hubConnection) readLoop() {
   for {
     if _, _, err := conn.socket.NextReader(); err != nil {
       log.Println("Error reading websocket: ", err)

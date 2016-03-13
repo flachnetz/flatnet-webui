@@ -7,7 +7,7 @@ class ChunkedTrafficSource {
   get traffic() {
     return this.chunks
       .filter(chunk => chunk.type === "traffic")
-      .flatMap(chunk => Rx.Observable.from(chunk.edges))
+      .flatMap(chunk => Rx.Observable.from(chunk.pings || []))
       .flatMap(packet => {
         const count = this.pingCount(packet);
         const duration = this.durationOf(packet);
@@ -48,16 +48,14 @@ class WebsocketTrafficSource extends ChunkedTrafficSource {
     super();
 
     this.chunks = Rx.DOM.fromWebSocket(uri.replace(/\/\/+/g, "/"))
-      // parse json and get the edges
       .map(event => JSON.parse(event.data))
-
-      // log the package
-      // .doOnNext(packet => console.log("Received package: ", packet))
 
       // retry on errors
       .retryWhen(errors => errors
         .doOnNext(error => console.log("Websocket error, reconnecting shortly:", error))
         .delay(1000))
+
+      .tap(rxDebug())
 
       .share();
   }
