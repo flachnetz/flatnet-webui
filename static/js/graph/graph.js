@@ -57,12 +57,12 @@ const GraphView = (() => {
     /**
      * Registers key events.
      *
-     * @param {Element} $outer The outermost layer in the markup
      * @private
      */
-    _setupKeyboardEventListeners($outer) {
+    _setupKeyboardEventListeners() {
       Rx.DOM.keypress(document)
         .filter(event => event.code === "KeyR" || event.code === "Delete")
+        .filter(event => event.target === document.body)
         .flatMap(this.rxSelection.take(1))
         .subscribe(nodes => {
           this.clearSelection();
