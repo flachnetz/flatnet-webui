@@ -36,6 +36,21 @@ function createChildOf(parent, tag, ...classes) {
 }
 
 /**
+ * Parses the given html string into an element.
+ * @param {String} html
+ * @returns {Element}
+ */
+function parseHtml(html) {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = html;
+  if (wrapper.childElementCount !== 1) {
+    throw new Error("html should contain exactly one root element");
+  }
+  
+  return wrapper.firstElementChild;
+}
+
+/**
  * Compares two arrays. Returns true, if the length of both
  * arrays equals and they contain the same elements in the same
  * order where each pair of elements is compared using "===".
@@ -48,3 +63,4 @@ function arrayEquals(lhs, rhs) {
   return lhs === rhs || (rhs != null && lhs != null) && (
     lhs.length === rhs.length && lhs.every((val, idx) => val === rhs[idx]));
 }
+

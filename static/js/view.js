@@ -2,6 +2,8 @@
 
 class View {
   constructor(...args) {
+    this._rxLifecycle = new Rx.Subject();
+
     this.init(...args);
 
     /**
@@ -46,6 +48,9 @@ class View {
    * back to the dom.
    */
   destroy() {
+    this._rxLifecycle.onNext(true);
+    this._rxLifecycle.onCompleted();
+
     const parent = this.$root.parentNode;
     if (parent) {
       parent.removeChild(this.$root);

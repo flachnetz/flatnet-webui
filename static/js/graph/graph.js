@@ -19,7 +19,7 @@ const GraphView = (() => {
   function _nodeClass(id) {
     return `__n${id}`;
   }
-  
+
   class GraphView extends View {
     /**
      * Initializes a new graph view.
@@ -65,16 +65,15 @@ const GraphView = (() => {
         .filter(event => event.code === "KeyR" || event.code === "Delete")
         .flatMap(this.rxSelection.take(1))
         .subscribe(nodes => {
-          this._clearSelection();
+          this.clearSelection();
           nodes.forEach(node => node.destroy());
         });
     }
 
     /**
      * Clears the current selection.
-     * @private
      */
-    _clearSelection() {
+    clearSelection() {
       this._updateSelection([]);
     }
 
@@ -86,6 +85,15 @@ const GraphView = (() => {
     _updateSelection(nodes) {
       require(nodes, "Must provide an array of nodes");
       this._rxSelectionSubject.onNext(nodes);
+    }
+
+    /**
+     * Selects node that contain the given string as a substring in their alias.
+     */
+    selectByTerm(term) {
+      const pattern = new RegExp(term, "i");
+      const nodes = this.nodes.filter(node => pattern.test(node.alias));
+      this._updateSelection(nodes);
     }
 
     /**
