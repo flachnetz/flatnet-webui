@@ -19,6 +19,8 @@ window.onload = () => {
       }
     });
   });
+
+  registerGroupNodes("KeyG", graph);
   
   // create a search view to open on ctrl-f
   const search = new SearchView();
