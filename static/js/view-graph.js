@@ -266,7 +266,7 @@
           // and move the graph using this vector.
           .withLatestFrom(this.rxSelection))
 
-        .subscribe(([delta, nodes]) => this.moveNodesBy(delta, nodes));
+        .subscribe(([delta, nodes]) => this._moveNodesBy(delta, nodes));
 
       primaryMousedown
       // dont start selection on a node.
@@ -297,7 +297,7 @@
             st.height = bbox.height + "px";
           })
 
-          .map(bbox => this.intersectingNodes(bbox))
+          .map(bbox => this._intersectingNodes(bbox))
 
           // hide at the end
           .finally(() => this.$selection.style.display = "none"))
@@ -311,7 +311,7 @@
      * @param {Rect} bbox The bounding box to search nodes in
      * @returns {Array<GraphNodeView>}
      */
-    intersectingNodes(bbox) {
+    _intersectingNodes(bbox) {
       function selectionTest(node) {
         return bbox.intersectsCircle(node.position, node.radius);
       }
@@ -325,7 +325,7 @@
      * @param {Vector} delta
      * @param {Array.<GraphNodeView>} nodes The nodes shall be moved
      */
-    moveNodesBy(delta, nodes = []) {
+    _moveNodesBy(delta, nodes = []) {
       (nodes.length ? nodes : this.nodes)
         .map(node => [node, node.position.plus(delta)])
         .forEach(([node, pos]) => {
