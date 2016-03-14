@@ -19,8 +19,4 @@ window.onload = () => {
       }
     });
   });
-
-  graph.rxSelection.subscribe(selection => {
-    console.log("Update selection:", selection);
-  });
 };
