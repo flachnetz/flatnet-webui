@@ -52,7 +52,7 @@
      * @returns {Rx.Observable<Vector>}
      */
     get rxPosition() {
-      return this._position.filter(pos => pos !== undefined).map(Vector.of);
+      return this._position.filter(pos => pos != null).map(Vector.of);
     }
 
     /**
@@ -80,7 +80,7 @@
     }
 
     get size() {
-      return this._size !== undefined
+      return this._size
         ? this._size
         : this._size = super.size;
     }
@@ -132,8 +132,8 @@
       const view = createElement("div", "graph__edge");
 
       const closer = Rx.Observable.merge(
-          this._source.ignoreElements().concat(Rx.Observable.just(true)),
-          this._target.ignoreElements().concat(Rx.Observable.just(true)));
+        this._source.ignoreElements().concat(Rx.Observable.just(true)),
+        this._target.ignoreElements().concat(Rx.Observable.just(true)));
 
       Rx.Observable.combineLatest(this._source, this._target)
         .takeUntil(closer)
@@ -178,7 +178,9 @@
      */
     init(stateStore) {
       this.stateStore = require(stateStore, "state store must be non-null");
-      this._manualSelectionUpdates = new Rx.Subject();
+
+      this._rxSelectionSubject = new Rx.BehaviorSubject([]);
+      this.rxSelection = this._rxSelectionSubject.distinctUntilChanged(null, arrayEquals)
     }
 
     render() {
@@ -191,6 +193,13 @@
 
       this._setupMoveEventListeners($outer);
       this._setupKeyboardEventListeners($outer);
+
+      // highlight currently selected nodes
+      this.rxSelection.subscribe(selected => {
+        this.nodes.forEach(node => {
+          node.selected = selected.indexOf(node) !== -1;
+        });
+      });
 
       return $outer;
     }
@@ -211,8 +220,22 @@
         });
     }
 
+    /**
+     * Clears the current selection.
+     * @private
+     */
     _clearSelection() {
-      this._manualSelectionUpdates.onNext([]);
+      this._updateSelection([]);
+    }
+
+    /**
+     * Updates the selection to the given array of nodes.
+     * @param {GraphNodeView[]} nodes The new selection
+     * @private
+     */
+    _updateSelection(nodes) {
+      require(nodes, "Must provide an array of nodes");
+      this._rxSelectionSubject.onNext(nodes);
     }
 
     /**
@@ -221,8 +244,17 @@
      * @private
      */
     _setupMoveEventListeners($outer) {
-      Rx.DOM.mousedown($outer)
-        .filter(event => event.button === 0 && event.target.classList.contains("graph__node--selected"))
+      const primaryMousedown = Rx.DOM.mousedown($outer)
+        .filter(event => event.button === 0)
+        .share();
+
+      primaryMousedown
+        .filter(event => event.target.matches(".graph__node:not(.graph__node--selected)"))
+        .map(event => View.of(event.target))
+        .subscribe(node => this._updateSelection([node]));
+
+      primaryMousedown
+        .filter(event => event.target.classList.contains("graph__node--selected"))
         .flatMap(event => Rx.DOM.mousemove($outer)
 
           // stop on mouse up
@@ -236,9 +268,9 @@
 
         .subscribe(([delta, nodes]) => this.moveNodesBy(delta, nodes));
 
-      this.rxSelection = Rx.DOM.mousedown($outer)
-        // only start on not-selected nodes
-        .filter(event => event.button === 0 && (event.target.matches(":not(.graph__node), .graph__node:not(.graph__node--selected)")))
+      primaryMousedown
+      // dont start selection on a node.
+        .filter(event => !event.target.classList.contains("graph__node"))
 
         .flatMap(down => Rx.DOM.mousemove($outer)
 
@@ -265,41 +297,26 @@
             st.height = bbox.height + "px";
           })
 
-          .map(bbox => this.applySelection(bbox))
+          .map(bbox => this.intersectingNodes(bbox))
 
           // hide at the end
-          .finally(() => this.$selection.style.display = "none")
+          .finally(() => this.$selection.style.display = "none"))
 
-          // only get the last selection
-          .last({defaultValue: []}))
-
-        .merge(this._manualSelectionUpdates)
-
-        // start with an empty selection
-        .publishValue([]);
-
-      // eagerly connect
-      this.rxSelection.connect();
+        .subscribe(nodes => this._updateSelection(nodes));
     }
 
 
     /**
-     * @param {Rect} bbox The bounding box for the selection
+     * Finds all nodes that are touched by the given rectangle
+     * @param {Rect} bbox The bounding box to search nodes in
      * @returns {Array<GraphNodeView>}
      */
-    applySelection(bbox) {
+    intersectingNodes(bbox) {
       function selectionTest(node) {
         return bbox.intersectsCircle(node.position, node.radius);
       }
 
-      return this.nodes.map(node => {
-        if (selectionTest(node)) {
-          node.selected = true;
-          return node;
-        } else {
-          node.selected = false;
-        }
-      }).filter(node => node);
+      return this.nodes.filter(selectionTest);
     }
 
     /**
@@ -350,7 +367,7 @@
       node.appendTo(this.$nodes);
 
       // move node to the provided position
-      if (position !== undefined) {
+      if (position) {
         node.moveTo(position);
       }
 
@@ -392,7 +409,7 @@
       if (nodeId instanceof GraphNodeView)
         return nodeId;
 
-      if (nodeId === undefined || nodeId === null)
+      if (nodeId == null)
         return null;
 
       const nodes = this.$nodes.querySelector("." + _nodeClass(nodeId));
@@ -474,9 +491,9 @@
      * @returns {Vector, undefined}
      */
     positionOf(nodeId, newValue) {
-      if (newValue === undefined) {
+      if (!newValue) {
         const pos = this.state.positions[nodeId];
-        return pos !== undefined ? Vector.of(pos) : undefined;
+        return pos ? Vector.of(pos) : undefined;
       } else {
         const pos = Vector.of(newValue);
         this.state.positions[nodeId] = [pos.x, pos.y];

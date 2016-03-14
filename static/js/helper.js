@@ -1,17 +1,17 @@
 "use strict";
 
 function require(value, message) {
-  if (value === null || value === undefined)
+  if (value == null)
     throw new Error(message);
 
   return value;
 }
 
-function rxDebug() {
+function tap(tag = "") {
   return Rx.Observer.create(
-    (value) => console.log("on next: ", value),
-    (error) => console.log("on error", error),
-    () => console.log("on complete"));
+    (value) => console.log(`on next (${tag}):`, value),
+    (error) => console.log(`on error (${tag}):`, error),
+    () => console.log(`on complete (${tag})`));
 }
 
 /**
@@ -33,4 +33,18 @@ function createChildOf(parent, tag, ...classes) {
   const element = createElement(tag, ...classes);
   parent.appendChild(element);
   return element;
+}
+
+/**
+ * Compares two arrays. Returns true, if the length of both
+ * arrays equals and they contain the same elements in the same
+ * order where each pair of elements is compared using "===".
+ *
+ * @param {Array} lhs The first array
+ * @param {Array} rhs The second array
+ * @returns {boolean}
+ */
+function arrayEquals(lhs, rhs) {
+  return lhs === rhs || (rhs != null && lhs != null) && (
+    lhs.length === rhs.length && lhs.every((val, idx) => val === rhs[idx]));
 }
