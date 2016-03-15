@@ -68,5 +68,10 @@ function registerGraphSupportShortcuts(graph, eventTarget = document.body) {
   withSelection("KeyG", graph, eventTarget).subscribe(GraphSupport.gridNodes);
   withSelection("KeyL", graph, eventTarget).subscribe(GraphSupport.lineupNodes);
   withSelection("KeyC", graph, eventTarget).subscribe(GraphSupport.circleNodes);
+
+  withSelection("Delete", graph, eventTarget).subscribe(nodes => {
+    graph.clearSelection();
+    nodes.forEach(node => node.destroy());
+  });
 }
 

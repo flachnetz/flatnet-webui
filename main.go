@@ -3,11 +3,11 @@ package main
 import (
   "os"
   "net/http"
+  "log"
+  "flag"
   "github.com/gorilla/handlers"
   "github.com/gorilla/mux"
   "github.com/gorilla/websocket"
-  "log"
-  "flag"
   "github.com/oliverbestmann/flowly-ui/flowly"
 )
 

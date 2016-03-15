@@ -42,7 +42,6 @@ const GraphView = (() => {
       this.$selection.style.display = "none";
 
       this._setupMoveEventListeners($outer);
-      this._setupKeyboardEventListeners($outer);
 
       // highlight currently selected nodes
       this.rxSelection.subscribe(selected => {
@@ -52,22 +51,6 @@ const GraphView = (() => {
       });
 
       return $outer;
-    }
-
-    /**
-     * Registers key events.
-     *
-     * @private
-     */
-    _setupKeyboardEventListeners() {
-      Rx.DOM.keypress(document)
-        .filter(event => event.code === "Delete")
-        .filter(event => event.target === document.body)
-        .flatMap(this.rxSelection.take(1))
-        .subscribe(nodes => {
-          this.clearSelection();
-          nodes.forEach(node => node.destroy());
-        });
     }
 
     /**
