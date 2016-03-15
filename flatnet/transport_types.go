@@ -1,4 +1,4 @@
-package flowly
+package flatnet
 
 type Ping struct {
   Source   string `json:"source"`

@@ -8,10 +8,10 @@ import (
   "github.com/gorilla/handlers"
   "github.com/gorilla/mux"
   "github.com/gorilla/websocket"
-  "github.com/oliverbestmann/flowly-ui/flowly"
+  "github.com/oliverbestmann/flowly-ui/flatnet"
 )
 
-func handleWebSocket(hub *flowly.Hub, w http.ResponseWriter, req *http.Request) {
+func handleWebSocket(hub *flatnet.Hub, w http.ResponseWriter, req *http.Request) {
   socket, err := websocket.Upgrade(w, req, nil, 0, 0)
   if err != nil {
     log.Println("Could not upgrade to websocket: ", err)
@@ -30,12 +30,12 @@ func main() {
   flag.Parse()
 
   // create the hub and start routing traffic.
-  hub := flowly.NewHub()
+  hub := flatnet.NewHub()
   go hub.MainLoop()
 
   if (*dummy) {
     log.Println("Starting dummy traffic generator");
-    flowly.SetupDummyTraffic(hub);
+    flatnet.SetupDummyTraffic(hub);
   }
 
   if (*kafkaAddress != "") {
@@ -43,7 +43,7 @@ func main() {
       log.Fatalln("You need to specify --kafka-topic with --kafka-address")
     }
 
-    flowly.SetupKafkaTraffic(hub, *kafkaAddress, *kafkaTopic)
+    flatnet.SetupKafkaTraffic(hub, *kafkaAddress, *kafkaTopic)
   }
 
   router := mux.NewRouter()

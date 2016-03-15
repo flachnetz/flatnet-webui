@@ -1,4 +1,4 @@
-package flowly
+package flatnet
 
 import (
   "github.com/gorilla/websocket"
