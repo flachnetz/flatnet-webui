@@ -8,7 +8,7 @@ import (
   "github.com/gorilla/websocket"
   "log"
   "flag"
-  "github.com/oliverbestmann/flowly/flowly"
+  "github.com/oliverbestmann/flowly-ui/flowly"
 )
 
 func handleWebSocket(hub *flowly.Hub, w http.ResponseWriter, req *http.Request) {
