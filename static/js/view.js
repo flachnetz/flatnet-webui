@@ -1,8 +1,13 @@
 "use strict";
 
 class View {
-  constructor(...args) {
-    this._rxLifecycle = new Rx.Subject();
+  /**
+   *
+   * @param {Element} $parent The parent node for this view. The view will be added to that parent.
+   * @param {*} args
+     */
+  constructor($parent, ...args) {
+    this.rxLifecycle = new Rx.Subject();
 
     this.init(...args);
 
@@ -12,14 +17,14 @@ class View {
     this.$root = this.render();
     this.$root.__view = this;
 
-    this.added = false;
+    $parent.appendChild(this.$root);
   }
 
   /**
    * Implement this method in a subclass. The arguments that were
    * passed to the constructor will be forwarded to this method.
    */
-  init() {
+  init(...args) {
   }
 
   /**
@@ -31,25 +36,11 @@ class View {
   }
 
   /**
-   * Appends this view to the given target. A view can only be appended once.
-   * @param {Element} target The target to append to.
-   */
-  appendTo(target) {
-    if (this.added)
-      throw new Error("View already added once");
-
-    target.appendChild(this.$root);
-    this.added = true;
-  }
-
-  /**
    * Removes this node from the dom.
-   * This might destroy all kind of stuff and the node shouldn't be added
-   * back to the dom.
    */
   destroy() {
-    this._rxLifecycle.onNext(true);
-    this._rxLifecycle.onCompleted();
+    this.rxLifecycle.onNext(true);
+    this.rxLifecycle.onCompleted();
 
     const parent = this.$root.parentNode;
     if (parent) {

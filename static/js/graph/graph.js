@@ -181,9 +181,8 @@ const GraphView = (() => {
      * @returns {GraphEdgeView}
      */
     connect(first, second) {
-      const edge = new GraphEdgeView(first.rxPosition, second.rxPosition);
+      const edge = new GraphEdgeView(this.$edges, first.rxPosition, second.rxPosition);
       edge.$root.classList.add(_edgeClass(first.id, second.id));
-      edge.appendTo(this.$edges);
       return edge;
     }
 
@@ -196,27 +195,6 @@ const GraphView = (() => {
     _defaultNodePosition(node) {
       return this.stateStore.positionOf(node.id) || new Vector(this.width / 2, this.height / 2)
           .plus(Vector.random().scaled(50 + 100 * Math.random()));
-    }
-
-    /**
-     * Adds the given node to the graph view.
-     * @param {GraphNodeView} node
-     * @param {Vector|*} position
-     */
-    addNode(node, position = this._defaultNodePosition(node)) {
-      node.$root.classList.add(_nodeClass(node.id));
-      node.appendTo(this.$nodes);
-
-      // move node to the provided position
-      if (position) {
-        node.moveTo(position);
-      }
-
-      // sync changes in the position back to the store
-      node.rxPosition.debounce(100).subscribe(pos => {
-        this.stateStore.positionOf(node.id, pos);
-        this.stateStore.persist();
-      });
     }
 
     /**
@@ -268,6 +246,17 @@ const GraphView = (() => {
       if (existingNode !== null)
         return existingNode;
 
+      return this._createNode(nodeId, nearNodeId);
+    }
+
+    /**
+     * Creates a new node in the graph.
+     * @param nodeId The id of the node to create
+     * @param nearNodeId A node that should be used to determine a new position-
+     * @returns {GraphNodeView}
+     * @private
+     */
+    _createNode(nodeId, nearNodeId) {
       // generate a random position for the new node.
       const position = this.stateStore.positionOf(nodeId) || (() => {
           const nearNode = this.nodeOf(nearNodeId);
@@ -278,8 +267,20 @@ const GraphView = (() => {
         })();
 
       // ok, create a new node
-      const node = new GraphNodeView(nodeId);
-      this.addNode(node, position);
+      const node = new GraphNodeView(this.$nodes, nodeId);
+
+      node.$root.classList.add(_nodeClass(node.id));
+
+      // move node to the provided position
+      if (position) {
+        node.moveTo(position);
+      }
+
+      // sync changes in the position back to the store
+      node.rxPosition.debounce(100).subscribe(pos => {
+        this.stateStore.positionOf(node.id, pos);
+        this.stateStore.persist();
+      });
 
       return node;
     }

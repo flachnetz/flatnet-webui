@@ -1,8 +1,7 @@
 "use strict";
 
 window.onload = () => {
-  const graph = new GraphView(StateStore.restore("test"));
-  graph.appendTo(document.body);
+  const graph = new GraphView(document.body, StateStore.restore("test"));
 
   var source = new WebsocketTrafficSource();
 
@@ -23,8 +22,7 @@ window.onload = () => {
   registerGraphSupportShortcuts(graph);
   
   // create a search view to open on ctrl-f
-  const search = new SearchView();
-  search.appendTo(document.body);
+  const search = new SearchView(document.body);
   SearchView.bindToShortcut(search);
   
   search.rxQueries.subscribe(term => {
