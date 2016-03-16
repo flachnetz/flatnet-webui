@@ -30,8 +30,7 @@ class SearchView extends View {
      * @type {Rx.Subject<String>}
      */
     this.rxQueries = queries.takeUntil(this.rxLifecycle);
-    this.rxQueries.subscribe(tap("search"));
-
+    
     return $view;
   }
 
