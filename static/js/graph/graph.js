@@ -57,15 +57,14 @@ const GraphView = (() => {
      * Clears the current selection.
      */
     clearSelection() {
-      this._updateSelection([]);
+      this.updateSelection([]);
     }
 
     /**
      * Updates the selection to the given array of nodes.
      * @param {GraphNodeView[]} nodes The new selection
-     * @private
      */
-    _updateSelection(nodes) {
+    updateSelection(nodes) {
       require(nodes, "Must provide an array of nodes");
       this._rxSelectionSubject.onNext(nodes);
     }
@@ -76,7 +75,7 @@ const GraphView = (() => {
     selectByTerm(term) {
       const pattern = new RegExp(term, "i");
       const nodes = this.nodes.filter(node => pattern.test(node.alias));
-      this._updateSelection(nodes);
+      this.updateSelection(nodes);
     }
 
     /**
@@ -92,7 +91,7 @@ const GraphView = (() => {
       primaryMousedown
         .filter(event => event.target.matches(".graph__node:not(.graph__node--selected)"))
         .map(event => View.of(event.target))
-        .subscribe(node => this._updateSelection([node]));
+        .subscribe(node => this.updateSelection([node]));
 
       primaryMousedown
         .filter(event => event.target.classList.contains("graph__node--selected"))
@@ -143,7 +142,7 @@ const GraphView = (() => {
           // hide at the end
           .finally(() => this.$selection.style.display = "none"))
 
-        .subscribe(nodes => this._updateSelection(nodes));
+        .subscribe(nodes => this.updateSelection(nodes));
     }
 
 
@@ -303,7 +302,7 @@ const GraphView = (() => {
 
     /**
      * Array of all the nodes-
-     * @returns {Array<GraphNodeView>}
+     * @returns {GraphNodeView[]}
      */
     get nodes() {
       return Array.from(this.$nodes.childNodes, View.of);

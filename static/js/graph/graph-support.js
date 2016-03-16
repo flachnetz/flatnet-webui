@@ -14,6 +14,18 @@ const GraphSupport = (function () {
   }
 
   return {
+    /**
+     * Selects all nodes in a graph
+     * @param {GraphView} graph
+     */
+    selectAllNodes(graph) {
+      if(graph.nodes.every(node => node.selected)) {
+        graph.clearSelection();
+      } else {
+        graph.updateSelection(graph.nodes);
+      }
+    },
+
     gridNodes(nodes) {
       const center = centerOfNodes(nodes);
       const columnCount = Math.ceil(Math.sqrt(nodes.length));
@@ -58,20 +70,29 @@ const GraphSupport = (function () {
 }());
 
 function registerGraphSupportShortcuts(graph, eventTarget = document.body) {
-  function withSelection(key, graph, eventTarget) {
-    return Rx.DOM.keydown(eventTarget)
+  const keydownEvents = Rx.DOM.keydown(eventTarget).share();
+
+  function keyEvents(key) {
+    return keydownEvents
       .filter(event => event.target === eventTarget && event.code === key)
+      .doOnNext(event => event.preventDefault());
+  }
+
+  function keyWithSelection(key) {
+    return keyEvents(key)
       .flatMap(event => graph.rxSelection.take(1))
       .filter(nodes => nodes.length > 1);
   }
 
-  withSelection("KeyG", graph, eventTarget).subscribe(GraphSupport.gridNodes);
-  withSelection("KeyL", graph, eventTarget).subscribe(GraphSupport.lineupNodes);
-  withSelection("KeyC", graph, eventTarget).subscribe(GraphSupport.circleNodes);
+  keyWithSelection("KeyG").subscribe(GraphSupport.gridNodes);
+  keyWithSelection("KeyL").subscribe(GraphSupport.lineupNodes);
+  keyWithSelection("KeyC").subscribe(GraphSupport.circleNodes);
 
-  withSelection("Delete", graph, eventTarget).subscribe(nodes => {
+  keyWithSelection("Delete").subscribe(nodes => {
     graph.clearSelection();
     nodes.forEach(node => node.destroy());
   });
+
+  keyEvents("KeyA").subscribe(() => GraphSupport.selectAllNodes(graph));
 }
 
