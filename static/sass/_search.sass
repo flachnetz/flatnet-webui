@@ -3,27 +3,31 @@
 $search-width: 12em
 
 .search
-  position: absolute
+  position: fixed
   box-sizing: border-box
 
+  background-color: rgba(black, 0.25)
+  left: 0
+  right: 0
+  top: 0
+  bottom: 0
+
+  &--hidden
+    display: none
+
+
+.search__input
+  position: absolute
+  box-sizing: border-box
   font-size: 200%
+
+  padding: 0.25em
 
   top: 20%
   left: 50%
   margin-left: -$search-width/2
   width: $search-width
 
-  padding: 0.5em
-  background-color: rgba($color-primary, 0.5)
-
-  &--hidden
-    display: none
-
-
-
-.search__input
-  box-sizing: border-box
-  font-size: 1em
-  width: 100%
-  border: 0
-  padding: 0.25em
+  outline: none
+  border: 0.5em solid rgba(#000, 0.75)
+  box-shadow: 0 0 0.5em rgba(black, 0.5)
