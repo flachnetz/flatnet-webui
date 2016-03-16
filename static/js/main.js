@@ -20,17 +20,10 @@ window.onload = () => {
   });
 
   registerGraphSupportShortcuts(graph);
-  
-  // create a search view to open on ctrl-f
+
+  // create a search view to open on ctrl-f and bind it to the graph.
   const search = new SearchView(document.body);
-  SearchView.bindToShortcut(search);
-  
-  search.rxQueries.subscribe(term => {
-    if(term === "") {
-      graph.clearSelection();
-    } else {
-      graph.selectByTerm(term);
-    }
-  });
+  SearchView.registerShortcut(search);
+  registerGraphSearchView(graph, search);
   
 };

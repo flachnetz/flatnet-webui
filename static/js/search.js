@@ -54,18 +54,15 @@ class SearchView extends View {
    * Binds the given search view to the ctrl-f search shortcut.
    * @param {SearchView} searchView The searchview to bind.
    */
-  static bindToShortcut(searchView) {
+  static registerShortcut(searchView) {
     const closer = searchView.rxQueries
       .ignoreElements()
       .concat(Rx.Observable.just(true));
 
     Rx.DOM.keydown(document)
       .takeUntil(closer)
-      .filter(event => event.ctrlKey && event.code === "KeyF")
+      .filter(event => matchesKey(event, {ctrl: true, code: "KeyF"}))
       .doOnNext(event => event.preventDefault())
-      .tap(tap())
-      .subscribe(() => {
-        searchView.show();
-      });
+      .subscribe(() => searchView.show());
   }
 }

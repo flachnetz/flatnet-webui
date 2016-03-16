@@ -103,3 +103,17 @@ function registerGraphSupportShortcuts(graph, eventTarget = document.body) {
   keyEvents("Escape").subscribe(() => graph.clearSelection());
 }
 
+/**
+ * Binds a search view to the given graph.
+ * @param {GraphView} graph The graph to serach
+ * @param {SearchView} search The search view to bind.
+ */
+function registerGraphSearchView(graph, search) {
+  search.rxQueries.map(term => term.trim()).subscribe(term => {
+    if(term === "") {
+      graph.clearSelection();
+    } else {
+      graph.selectByTerm(term);
+    }
+  });
+}
