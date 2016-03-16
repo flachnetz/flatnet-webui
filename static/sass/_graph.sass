@@ -26,9 +26,14 @@ $node-border-color: mix($color-primary, $color-primary-dark, 50%)
   position: absolute
   display: block
   box-sizing: border-box
+  cursor: default
 
   width: $node-radius
   height: $node-radius
+
+  // smaller font
+  font-family: "PT Sans Narrow", sans-serif
+  font-size: 75%
 
   // center text
   line-height: 4rem - 2*$edge-width
@@ -38,13 +43,10 @@ $node-border-color: mix($color-primary, $color-primary-dark, 50%)
   background: $color-primary-dark
   border: $node-border-color solid $node-border-width
   border-radius: 10rem
-  cursor: pointer
-
-  font-family: "PT Sans Narrow", sans-serif
-  font-size: 75%
 
   &--selected
     border-color: $color-accent
+
 
 .graph__edge
   position: absolute
@@ -79,3 +81,4 @@ $node-border-color: mix($color-primary, $color-primary-dark, 50%)
   background: rgba($color-accent, 0.25)
   border: 1px solid rgba($color-accent, 0.75)
   box-sizing: border-box
+
