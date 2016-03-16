@@ -5,7 +5,7 @@ $edge-packet-width: 8px
 $edge-packet-color-1: $color-accent
 $edge-packet-color-2: $color-accent
 
-$node-radius: 4rem
+$node-radius: 2rem
 $node-border-width: 0.2rem
 $node-border-color: mix($color-primary, $color-primary-dark, 50%)
 
@@ -28,15 +28,15 @@ $node-border-color: mix($color-primary, $color-primary-dark, 50%)
   box-sizing: border-box
   cursor: default
 
-  width: $node-radius
-  height: $node-radius
+  width: 2*$node-radius
+  height: 2*$node-radius
 
   // smaller font
   font-family: "PT Sans Narrow", sans-serif
   font-size: 75%
 
   // center text
-  line-height: 4rem - 2*$edge-width
+  line-height: 2*$node-radius - 2*$edge-width
   text-align: center
   white-space: nowrap
 

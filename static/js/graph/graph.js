@@ -30,7 +30,14 @@ const GraphView = (() => {
       this.stateStore = require(stateStore, "state store must be non-null");
 
       this._rxSelectionSubject = new Rx.BehaviorSubject([]);
-      this.rxSelection = this._rxSelectionSubject.distinctUntilChanged(null, arrayEquals)
+      this.rxSelection = this._rxSelectionSubject
+        .takeUntil(this.rxLifecycle)
+        .distinctUntilChanged(null, arrayEquals);
+
+      this._rxHoverNodeSubject = new Rx.BehaviorSubject(null);
+      this.rxHoverNode = this._rxHoverNodeSubject
+        .takeUntil(this.rxLifecycle)
+        .distinctUntilChanged();
     }
 
     render() {
@@ -143,6 +150,12 @@ const GraphView = (() => {
           .finally(() => this.$selection.style.display = "none"))
 
         .subscribe(nodes => this.updateSelection(nodes));
+      
+      Rx.DOM.mousemove($outer)
+        .map(target => event.buttons === 0 && event.target.classList.contains("graph__node")
+          ? View.of(event.target) : null)
+        .distinctUntilChanged()
+        .subscribe(this._rxHoverNodeSubject);
     }
 
 

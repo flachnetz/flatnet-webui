@@ -25,5 +25,7 @@ window.onload = () => {
   const search = new SearchView(document.body);
   SearchView.registerShortcut(search);
   registerGraphSearchView(graph, search);
-  
+
+  infoViewForNodeObservable(graph.rxHoverNode); 
+
 };

@@ -84,17 +84,17 @@ function registerGraphSupportShortcuts(graph, eventTarget = document.body) {
       .doOnNext(event => event.preventDefault());
   }
 
-  function keyWithSelection(key) {
+  function keyWithSelection(key, minCount=1) {
     return keyEvents(key)
       .flatMap(event => graph.rxSelection.take(1))
-      .filter(nodes => nodes.length > 1);
+      .filter(nodes => nodes.length > minCount);
   }
 
   keyWithSelection("KeyG").subscribe(GraphSupport.gridNodes);
   keyWithSelection("KeyL").subscribe(GraphSupport.lineupNodes);
   keyWithSelection("KeyC").subscribe(GraphSupport.circleNodes);
 
-  keyWithSelection("Delete").subscribe(nodes => {
+  keyWithSelection("Delete", 0).subscribe(nodes => {
     graph.clearSelection();
     nodes.forEach(node => node.destroy());
   });
