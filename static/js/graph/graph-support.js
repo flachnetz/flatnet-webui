@@ -19,7 +19,7 @@ const GraphSupport = (function () {
      * @param {GraphView} graph
      */
     selectAllNodes(graph) {
-      if(graph.nodes.every(node => node.selected)) {
+      if (graph.nodes.every(node => node.selected)) {
         graph.clearSelection();
       } else {
         graph.updateSelection(graph.nodes);
@@ -69,12 +69,18 @@ const GraphSupport = (function () {
   };
 }());
 
+/**
+ * Registers shortcuts for a graph.
+ *
+ * @param {GraphView} graph The graph to enhance.
+ * @param {Element} eventTarget Element to register events on. Defaults to body.
+ */
 function registerGraphSupportShortcuts(graph, eventTarget = document.body) {
   const keydownEvents = Rx.DOM.keydown(eventTarget).share();
 
   function keyEvents(key) {
     return keydownEvents
-      .filter(event => event.target === eventTarget && event.code === key)
+      .filter(event => event.target === eventTarget && matchesKey(event, key))
       .doOnNext(event => event.preventDefault());
   }
 
@@ -93,6 +99,7 @@ function registerGraphSupportShortcuts(graph, eventTarget = document.body) {
     nodes.forEach(node => node.destroy());
   });
 
-  keyEvents("KeyA").subscribe(() => GraphSupport.selectAllNodes(graph));
+  keyEvents({code: "KeyA", ctrl: true}).subscribe(() => GraphSupport.selectAllNodes(graph));
+  keyEvents("Escape").subscribe(() => graph.clearSelection());
 }
 

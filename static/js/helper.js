@@ -1,5 +1,12 @@
 "use strict";
 
+// Very crude detection of operation system.
+const System = {
+  mac: (navigator.userAgent || "").indexOf("Mac OS X") !== -1,
+  linux: (navigator.userAgent || "").indexOf("Linux") !== -1,
+  windows: (navigator.userAgent || "").indexOf("Windows") !== -1
+};
+
 function require(value, message) {
   if (value == null)
     throw new Error(message);
@@ -46,7 +53,7 @@ function parseHtml(html) {
   if (wrapper.childElementCount !== 1) {
     throw new Error("html should contain exactly one root element");
   }
-  
+
   return wrapper.firstElementChild;
 }
 
@@ -64,3 +71,19 @@ function arrayEquals(lhs, rhs) {
     lhs.length === rhs.length && lhs.every((val, idx) => val === rhs[idx]));
 }
 
+
+/**
+ * Matches a keyboard event against some key pattern
+ *
+ * @param {KeyboardEvent} event The event
+ * @param {Object} key The key description to check against. If this is a string will be matched against the "code" property.
+ */
+function matchesKey(event, key) {
+  if (typeof key === "string")
+    key = {code: key};
+
+  const ctrlName = System.mac ? "metaKey" : "ctrlKey";
+  return event.code === key.code
+    && (key.ctrl == null || event[ctrlName] === key.ctrl)
+    && (key.alt == null || event.altKey === key.alt);
+}
