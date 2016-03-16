@@ -7,7 +7,9 @@ import (
 )
 
 type Broadcaster interface {
-  BroadcastObject(interface{}) error
+  Broadcast(message []byte)
+
+  BroadcastObject(message interface{}) error
 }
 
 type Hub struct {
@@ -84,11 +86,15 @@ func (h *Hub) HandleConnection(socket *websocket.Conn) {
 
 }
 
+func (h *Hub) Broadcast(message []byte) {
+  h.broadcast <- message
+}
+
 func (h *Hub) BroadcastObject(message interface{}) error {
   bytes, err := json.Marshal(message)
   if err == nil {
     log.Println("Broadcasting to clients:", message)
-    h.broadcast <- bytes
+    h.Broadcast(bytes)
   }
 
   return err

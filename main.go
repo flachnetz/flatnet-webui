@@ -9,6 +9,7 @@ import (
   "github.com/gorilla/mux"
   "github.com/gorilla/websocket"
   "github.com/oliverbestmann/flowly-ui/flatnet"
+"io/ioutil"
 )
 
 func handleWebSocket(hub *flatnet.Hub, w http.ResponseWriter, req *http.Request) {
@@ -19,6 +20,17 @@ func handleWebSocket(hub *flatnet.Hub, w http.ResponseWriter, req *http.Request)
   }
 
   hub.HandleConnection(socket)
+}
+
+func handleHttpTrafficSource(hub *flatnet.Hub, w http.ResponseWriter, req *http.Request) {
+  bytes, err := ioutil.ReadAll(req.Body)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusBadRequest)
+    return
+  }
+
+  hub.Broadcast(bytes)
+  w.WriteHeader(http.StatusNoContent)
 }
 
 func main() {
@@ -47,8 +59,12 @@ func main() {
   }
 
   router := mux.NewRouter()
-  router.Path("/traffic").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+  router.Path("/traffic").Methods("GET").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
     handleWebSocket(hub, w, req);
+  })
+
+  router.Path("/traffic").Methods("POST").HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+    handleHttpTrafficSource(hub, w, req);
   })
 
   router.PathPrefix("/").Handler(http.FileServer(http.Dir("static")))
