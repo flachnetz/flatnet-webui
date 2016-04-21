@@ -12,7 +12,7 @@ class NodeInfoView extends View {
           <strong>Id:</strong> <span class="info__node__value info__node__value--id"></span>
         </div>
         <div>
-          <strong>Alias:</strong> <span class="info__node__value info__node__value--alias"></span>
+          <strong>Alias:</strong> <input class="info__node__value info__node__value--alias">
         </div>
       </div>`);
 
@@ -20,7 +20,10 @@ class NodeInfoView extends View {
     this.$id.innerText = this.node.id;
 
     this.$alias = $root.querySelector(".info__node__value--alias");
-    this.$alias.innerText = this.node.alias;
+    this.$alias.value = this.node.alias;
+    Rx.DOM.change(this.$alias)
+      .map(event => this.$alias.value)
+      .subscribe(alias => this.node.alias = alias);
 
     return $root;
   }
