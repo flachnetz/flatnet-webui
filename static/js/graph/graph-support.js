@@ -70,12 +70,52 @@ const GraphSupport = (function () {
 }());
 
 /**
+ * Groups the given nodes on the graph using the group mapper.
+ *
+ * @param {GraphView} graph
+ * @param {GroupMapper} mapper
+ * @param {GraphNodeView[]} nodes
+ */
+function groupNodes(graph, mapper, nodes) {
+  const nodeIds = nodes.map(node => node.id);
+  nodes.forEach(node => node.destroy());
+
+  const pattern = new RegExp(nodeIds.join("|"));
+  const target = "group-" + Date.now();
+
+  const mapping = mapper.newMapping(pattern, target);
+  mapping.nodeIds = nodeIds;
+
+  graph.getOrCreateNode(target);
+}
+
+/**
+ * Removes all groups for the given nodes.
+ *
+ * @param {GraphView} graph
+ * @param {GroupMapper} mapper
+ * @param {GraphNodeView[]} nodes
+ */
+function ungroupNodes(graph, mapper, nodes) {
+  nodes.forEach(node => {
+    mapper.remove(node.id).forEach(mapping => {
+      (mapping.nodeIds || []).forEach(nodeId => {
+        graph.getOrCreateNode(nodeId);
+      })
+    });
+
+    node.destroy();
+  })
+}
+
+/**
  * Registers shortcuts for a graph.
  *
  * @param {GraphView} graph The graph to enhance.
+ * @param {GroupMapper} mapper The mapper that is used to map node ids.
  * @param {Element} eventTarget Element to register events on. Defaults to body.
  */
-function registerGraphSupportShortcuts(graph, eventTarget = document.body) {
+function registerGraphSupportShortcuts(graph, mapper, eventTarget = document.body) {
   const keydownEvents = Rx.DOM.keydown(eventTarget).share();
 
   function keyEvents(key) {
@@ -93,6 +133,9 @@ function registerGraphSupportShortcuts(graph, eventTarget = document.body) {
   keyWithSelection("KeyG").subscribe(GraphSupport.gridNodes);
   keyWithSelection("KeyL").subscribe(GraphSupport.lineupNodes);
   keyWithSelection("KeyC").subscribe(GraphSupport.circleNodes);
+
+  keyWithSelection("KeyA").subscribe(nodes => groupNodes(graph, mapper, nodes));
+  keyWithSelection("KeyU", 0).subscribe(nodes => ungroupNodes(graph, mapper, nodes));
 
   keyWithSelection("Delete", 0).subscribe(nodes => {
     graph.clearSelection();

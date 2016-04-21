@@ -25,7 +25,7 @@ window.onload = () => {
     });
   });
 
-  registerGraphSupportShortcuts(graph);
+  registerGraphSupportShortcuts(graph, mapper);
 
   // create a search view to open on ctrl-f and bind it to the graph.
   const search = new SearchView(document.body);

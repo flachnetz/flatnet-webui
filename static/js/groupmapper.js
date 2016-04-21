@@ -29,7 +29,9 @@ class GroupMapper {
   }
 
   newMapping(pattern, target) {
-    this.pushMapping(new Mapping(pattern, target));
+    const mapping = new Mapping(pattern, target);
+    this.pushMapping(mapping);
+    return mapping;
   }
 
   /**
@@ -41,10 +43,30 @@ class GroupMapper {
     for (let i = 0; i < this.mappings.length; i++) {
       var mapping = this.mappings[i];
       if (mapping.matches(id)) {
-        return mapping.target;
+        id = mapping.target;
       }
     }
 
     return id;
+  }
+
+  /**
+   * Removes the mapping that maps to the given id.
+   * @param target The target id.
+   * @returns {Mapping[]}
+     */
+  remove(target) {
+    const mappings = [];
+
+    this.mappings = this.mappings.filter(mapping => {
+      if (mapping.target === target) {
+        mappings.push(mapping);
+        return false;
+      } else {
+        return true;
+      }
+    });
+    
+    return mappings;
   }
 }
