@@ -1,4 +1,3 @@
-
 /**
  * Helper class to save and restore the position of nodes
  */
@@ -9,6 +8,7 @@ class StateStore {
 
     // initialize "format"
     this.state.positions = this.state.positions || {};
+    this.state.aliases = this.state.aliases || {};
   }
 
   persist() {
@@ -28,6 +28,17 @@ class StateStore {
     } else {
       const pos = Vector.of(newValue);
       this.state.positions[nodeId] = [pos.x, pos.y];
+    }
+  }
+
+  /**
+   * @see positionOf
+   */
+  aliasOf(nodeId, newAlias) {
+    if (newAlias) {
+      this.state.aliases[nodeId] = newAlias;
+    } else {
+      return this.state.aliases[nodeId] || nodeId;
     }
   }
 

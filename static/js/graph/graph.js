@@ -288,6 +288,7 @@ const GraphView = (() => {
 
       // ok, create a new node
       const node = new GraphNodeView(this.$nodes, nodeId);
+      node.alias = this.stateStore.aliasOf(node.id);
 
       node.$root.classList.add(_nodeClass(node.id));
 
@@ -299,6 +300,11 @@ const GraphView = (() => {
       // sync changes in the position back to the store
       node.rxPosition.debounce(100).subscribe(pos => {
         this.stateStore.positionOf(node.id, pos);
+        this.stateStore.persist();
+      });
+
+      node.rxAlias.subscribe(pos => {
+        this.stateStore.aliasOf(node.id, node.alias);
         this.stateStore.persist();
       });
 
