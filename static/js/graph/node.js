@@ -16,7 +16,7 @@ const GraphNodeView = (() => {
       super.destroy();
       this._position.onCompleted();
     }
-
+    
     /**
      * The id of this node.
      * @returns {String}

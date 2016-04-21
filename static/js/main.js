@@ -3,10 +3,16 @@
 window.onload = () => {
   const graph = new GraphView(document.body, StateStore.restore("test"));
 
-  var source = new WebsocketTrafficSource();
+  const source = new WebsocketTrafficSource();
+
+  const mapper = new GroupMapper();
+  mapper.newMapping(/node-3./, "games");
 
   source.traffic.subscribe(ping => {
-    const {edge, reverse} = graph.getOrCreateEdge(ping.source, ping.target);
+    const sourceId = mapper.map(ping.source);
+    const targetId = mapper.map(ping.target);
+
+    const {edge, reverse} = graph.getOrCreateEdge(sourceId, targetId);
     edge.ping(reverse);
   });
 
@@ -26,6 +32,6 @@ window.onload = () => {
   SearchView.registerShortcut(search);
   registerGraphSearchView(graph, search);
 
-  infoViewForNodeObservable(graph.rxHoverNode); 
+  infoViewForNodeObservable(graph.rxHoverNode);
 
 };
