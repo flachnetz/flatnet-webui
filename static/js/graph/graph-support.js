@@ -65,48 +65,52 @@ const GraphSupport = (function () {
       sortedNodes(nodes).forEach((node, idx) => {
         node.moveTo(startVector.plus(step.scaled(idx)));
       });
+    },
+
+
+    /**
+     * Groups the given nodes on the graph using the group mapper.
+     *
+     * @param {GraphView} graph
+     * @param {GroupMapper} mapper
+     * @param {GraphNodeView[]} nodes
+     */
+    groupNodes(graph, mapper, nodes) {
+      const nodeIds = nodes.map(node => node.id);
+
+      const pattern = new RegExp(nodeIds.join("|"));
+      const target = "group-" + Date.now();
+
+      const mapping = mapper.newMapping(pattern, target);
+      mapping.nodeIds = nodeIds;
+
+      const node = graph.getOrCreateNode(target);
+      node.moveTo(centerOfNodes(nodes));
+
+      // destroy original nodes.
+      nodes.forEach(node => node.destroy());
+    },
+
+    /**
+     * Removes all groups for the given nodes.
+     *
+     * @param {GraphView} graph
+     * @param {GroupMapper} mapper
+     * @param {GraphNodeView[]} nodes
+     */
+    ungroupNodes(graph, mapper, nodes) {
+      nodes.forEach(node => {
+        mapper.remove(node.id).forEach(mapping => {
+          (mapping.nodeIds || []).forEach(nodeId => {
+            graph.getOrCreateNode(nodeId);
+          })
+        });
+
+        node.destroy();
+      })
     }
   };
 }());
-
-/**
- * Groups the given nodes on the graph using the group mapper.
- *
- * @param {GraphView} graph
- * @param {GroupMapper} mapper
- * @param {GraphNodeView[]} nodes
- */
-function groupNodes(graph, mapper, nodes) {
-  const nodeIds = nodes.map(node => node.id);
-  nodes.forEach(node => node.destroy());
-
-  const pattern = new RegExp(nodeIds.join("|"));
-  const target = "group-" + Date.now();
-
-  const mapping = mapper.newMapping(pattern, target);
-  mapping.nodeIds = nodeIds;
-
-  graph.getOrCreateNode(target);
-}
-
-/**
- * Removes all groups for the given nodes.
- *
- * @param {GraphView} graph
- * @param {GroupMapper} mapper
- * @param {GraphNodeView[]} nodes
- */
-function ungroupNodes(graph, mapper, nodes) {
-  nodes.forEach(node => {
-    mapper.remove(node.id).forEach(mapping => {
-      (mapping.nodeIds || []).forEach(nodeId => {
-        graph.getOrCreateNode(nodeId);
-      })
-    });
-
-    node.destroy();
-  })
-}
 
 /**
  * Registers shortcuts for a graph.
@@ -124,7 +128,7 @@ function registerGraphSupportShortcuts(graph, mapper, eventTarget = document.bod
       .doOnNext(event => event.preventDefault());
   }
 
-  function keyWithSelection(key, minCount=1) {
+  function keyWithSelection(key, minCount = 1) {
     return keyEvents(key)
       .flatMap(event => graph.rxSelection.take(1))
       .filter(nodes => nodes.length > minCount);
@@ -134,8 +138,8 @@ function registerGraphSupportShortcuts(graph, mapper, eventTarget = document.bod
   keyWithSelection("KeyL").subscribe(GraphSupport.lineupNodes);
   keyWithSelection("KeyC").subscribe(GraphSupport.circleNodes);
 
-  keyWithSelection("KeyA").subscribe(nodes => groupNodes(graph, mapper, nodes));
-  keyWithSelection("KeyU", 0).subscribe(nodes => ungroupNodes(graph, mapper, nodes));
+  keyWithSelection("KeyA").subscribe(nodes => GraphSupport.groupNodes(graph, mapper, nodes));
+  keyWithSelection("KeyU", 0).subscribe(nodes => GraphSupport.ungroupNodes(graph, mapper, nodes));
 
   keyWithSelection("Delete", 0).subscribe(nodes => {
     graph.clearSelection();
@@ -153,7 +157,7 @@ function registerGraphSupportShortcuts(graph, mapper, eventTarget = document.bod
  */
 function registerGraphSearchView(graph, search) {
   search.rxQueries.map(term => term.trim()).subscribe(term => {
-    if(term === "") {
+    if (term === "") {
       graph.clearSelection();
     } else {
       graph.selectByTerm(term);

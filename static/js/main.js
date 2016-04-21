@@ -6,7 +6,6 @@ window.onload = () => {
   const source = new WebsocketTrafficSource();
 
   const mapper = new GroupMapper();
-  mapper.newMapping(/node-3./, "games");
 
   source.traffic.subscribe(ping => {
     const sourceId = mapper.map(ping.source);
