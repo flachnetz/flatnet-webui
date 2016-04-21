@@ -16,9 +16,10 @@ class ChunkedTrafficSource {
         } else if (count === 1) {
           return Rx.Observable.just(packet);
         } else {
+          const cappedCount = Math.min(10, count);
           return Rx.Observable.zip(
-            Rx.Observable.interval(duration / count),
-            Rx.Observable.range(0, count),
+            Rx.Observable.interval(duration / cappedCount),
+            Rx.Observable.range(0, cappedCount),
             () => ({source: packet.source, target: packet.target}));
         }
       });

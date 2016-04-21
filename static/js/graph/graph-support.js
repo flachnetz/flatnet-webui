@@ -114,6 +114,24 @@ const GraphSupport = (function () {
       });
 
       graph.updateSelection(newNodes);
+    },
+
+      /**
+       *
+       * @param {GraphView} graph
+       */
+    reset(graph) {
+      graph.stateStore.clearPositions();
+      graph.stateStore.persist();
+
+      graph.nodes.forEach((node, idx) => {
+        const step = 1.5 * node.width;
+        const x = (idx % 10) * step;
+        const y = Math.floor(idx / 10) * step;
+
+        const offset = Vector.of(step, step);
+        node.moveTo(Vector.of(x, y).plus(offset));
+      });
     }
   };
 }());
@@ -143,8 +161,9 @@ function registerGraphSupportShortcuts(graph, mapper, eventTarget = document.bod
   keyWithSelection("KeyG").subscribe(GraphSupport.gridNodes);
   keyWithSelection("KeyL").subscribe(GraphSupport.lineupNodes);
   keyWithSelection("KeyC").subscribe(GraphSupport.circleNodes);
+  keyEvents("KeyR").subscribe(() => GraphSupport.reset(graph));
 
-  keyWithSelection("KeyA").subscribe(nodes => GraphSupport.groupNodes(graph, mapper, nodes));
+  keyWithSelection("KeyB").subscribe(nodes => GraphSupport.groupNodes(graph, mapper, nodes));
   keyWithSelection("KeyU", 0).subscribe(nodes => GraphSupport.ungroupNodes(graph, mapper, nodes));
 
   keyWithSelection("Delete", 0).subscribe(nodes => {

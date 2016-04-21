@@ -8,6 +8,7 @@ window.onload = () => {
   const mapper = new GroupMapper();
 
   source.traffic.subscribe(ping => {
+    console.log(ping);
     const sourceId = mapper.map(ping.source);
     const targetId = mapper.map(ping.target);
 

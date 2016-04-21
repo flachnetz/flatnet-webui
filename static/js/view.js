@@ -67,7 +67,7 @@ class View {
       parseFloat(this.$root.style.left || 0),
       parseFloat(this.$root.style.top || 0));
   }
-
+  
   /**
    * The width of this element.
    * @returns {Number}

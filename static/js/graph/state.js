@@ -31,6 +31,10 @@ class StateStore {
     }
   }
 
+  clearPositions() {
+    this.state.positions = {};
+  }
+  
   /**
    * @see positionOf
    */

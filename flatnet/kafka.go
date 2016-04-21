@@ -6,10 +6,38 @@ import (
   "strings"
   "github.com/shopify/sarama"
   "encoding/json"
+  "fmt"
 )
 
-type kafkaTrafficMessage struct {
-  Pings []Ping `json:"packets"`
+type kafkaEndpoint struct {
+  Name string
+  IP   string
+  Port int
+}
+
+type kafkaPing struct {
+  // Start time of capture
+  Timestamp uint64
+
+  // Source of this package
+  Source    kafkaEndpoint
+
+  // Target of this package
+  Target    kafkaEndpoint `json:"Destination"`
+
+  Len       int
+  Packages  int
+}
+
+type kafkaMessage struct {
+  Timestamp uint64
+  Duration  uint32 `json:"DurationInMillis"`
+  Pings     []kafkaPing `json:"ServicePackages"`
+}
+
+func (ep *kafkaEndpoint) ToNodeId() string {
+  ip := strings.Replace(ep.IP, ".", "_", -1)
+  return fmt.Sprintf("%s--%d", ip, ep.Port)
 }
 
 func SetupKafkaTraffic(bc Broadcaster, address, topic string) {
@@ -39,14 +67,35 @@ func SetupKafkaTraffic(bc Broadcaster, address, topic string) {
     for message := range partitionConsumer.Messages() {
       log.Printf("Got message of size %d\n", len(message.Value))
 
-      if (bytes.Contains(message.Value, []byte(`"packets"`))) {
-        content := kafkaTrafficMessage{}
+      if (bytes.Contains(message.Value, []byte(`"Source"`))) {
+        content := kafkaMessage{}
         if err := json.Unmarshal(message.Value, &content); err != nil {
           log.Println("Could not parse message:", err)
           continue
         }
 
-        bc.BroadcastObject(TrafficMessage{TypeTraffic, content.Pings})
+        var pings []Ping
+        for _, kafkaPing := range content.Pings {
+          if kafkaPing.Source.IP == "" || kafkaPing.Target.IP == "" {
+            log.Println("No source or target ip.")
+            continue
+          }
+
+          if kafkaPing.Len == 0 {
+            log.Println("Packet has no length.")
+            continue
+          }
+
+          pings = append(pings, Ping{
+            Source: kafkaPing.Source.ToNodeId(),
+            Target: kafkaPing.Target.ToNodeId(),
+            Duration: int(content.Duration),
+            Count: kafkaPing.Len,
+          })
+        }
+
+        log.Println("Broadcast ping via hub")
+        bc.BroadcastObject(TrafficMessage{TypeTraffic, pings})
       }
     }
   }()

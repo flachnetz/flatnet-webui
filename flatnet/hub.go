@@ -3,6 +3,7 @@ package flatnet
 import (
   "github.com/gorilla/websocket"
   "encoding/json"
+  "log"
 )
 
 type Broadcaster interface {
@@ -92,7 +93,7 @@ func (h *Hub) Broadcast(message []byte) {
 func (h *Hub) BroadcastObject(message interface{}) error {
   bytes, err := json.Marshal(message)
   if err == nil {
-    // log.Println("Broadcasting to clients:", message)
+    log.Println("Broadcasting to clients:", message)
     h.Broadcast(bytes)
   }
 
