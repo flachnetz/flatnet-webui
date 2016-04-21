@@ -4,6 +4,11 @@ const GraphNodeView = (() => {
       this._id = id;
       this._position = new Rx.BehaviorSubject();
       this._size = undefined;
+
+      this._rxAliasSubject = new Rx.BehaviorSubject(id);
+      this.rxAlias = this._rxAliasSubject
+        .distinctUntilChanged()
+        .takeUntil(this.rxLifecycle);
     }
 
     render() {
@@ -69,6 +74,7 @@ const GraphNodeView = (() => {
 
     set alias(alias) {
       this.$root.innerText = alias;
+      this._rxAliasSubject.onNext(alias);
     }
 
     get selected() {

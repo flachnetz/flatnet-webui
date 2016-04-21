@@ -19,7 +19,9 @@ window.onload = () => {
     graph.nodes.forEach(node => {
       const alias = mapping[node.id];
       if (alias) {
-        node.alias = alias;
+        if(node.id === node.alias) {
+          node.alias = alias;
+        }
       }
     });
   });

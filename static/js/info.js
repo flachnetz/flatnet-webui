@@ -20,7 +20,8 @@ class NodeInfoView extends View {
     this.$id.innerText = this.node.id;
 
     this.$alias = $root.querySelector(".info__node__value--alias");
-    this.$alias.value = this.node.alias;
+    this.node.rxAlias.subscribe(alias => this.$alias.value = alias);
+
     Rx.DOM.change(this.$alias)
       .map(event => this.$alias.value)
       .subscribe(alias => this.node.alias = alias);
