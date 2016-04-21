@@ -86,6 +86,7 @@ const GraphSupport = (function () {
 
       const node = graph.getOrCreateNode(target);
       node.moveTo(centerOfNodes(nodes));
+      graph.updateSelection([node]);
 
       // destroy original nodes.
       nodes.forEach(node => node.destroy());
@@ -99,15 +100,18 @@ const GraphSupport = (function () {
      * @param {GraphNodeView[]} nodes
      */
     ungroupNodes(graph, mapper, nodes) {
+      const newNodes = [];
       nodes.forEach(node => {
         mapper.remove(node.id).forEach(mapping => {
           (mapping.nodeIds || []).forEach(nodeId => {
-            graph.getOrCreateNode(nodeId);
+            newNodes.push(graph.getOrCreateNode(nodeId));
           })
         });
 
         node.destroy();
-      })
+      });
+
+      graph.updateSelection(newNodes);
     }
   };
 }());

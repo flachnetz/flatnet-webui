@@ -31,6 +31,6 @@ window.onload = () => {
   SearchView.registerShortcut(search);
   registerGraphSearchView(graph, search);
 
-  infoViewForNodeObservable(graph.rxHoverNode);
+  var info = new InfoPanel(document.body, graph.rxSelection);
 
 };
