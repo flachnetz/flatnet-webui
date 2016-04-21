@@ -80,12 +80,14 @@ const GraphSupport = (function () {
 
       const pattern = new RegExp(nodeIds.join("|"));
       const target = "group-" + Date.now();
+      const alias = prompt("Please input an alias for the new group");
 
       const mapping = mapper.newMapping(pattern, target);
       mapping.nodeIds = nodeIds;
 
       const node = graph.getOrCreateNode(target);
       node.moveTo(centerOfNodes(nodes));
+      node.alias = alias;
       graph.updateSelection([node]);
 
       // destroy original nodes.
