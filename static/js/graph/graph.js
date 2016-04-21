@@ -279,11 +279,12 @@ const GraphView = (() => {
     _createNode(nodeId, nearNodeId) {
       // generate a random position for the new node.
       const position = this.stateStore.positionOf(nodeId) || (() => {
-          const nearNode = this.nodeOf(nearNodeId);
-          if (nearNode !== null) {
-            const offset = Vector.random().normalized.scaled(3 * nearNode.radius);
-            return nearNode.position.plus(offset);
-          }
+          const width = this.width;
+          const height = this.height;
+
+          return Vector.of(width*Math.random(), height*Math.random())
+            .scaled(0.8)
+            .plus(Vector.of(0.1*width, 0.1*height));
         })();
 
       // ok, create a new node

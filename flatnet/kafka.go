@@ -6,7 +6,6 @@ import (
   "strings"
   "github.com/shopify/sarama"
   "encoding/json"
-  "fmt"
 )
 
 type kafkaEndpoint struct {
@@ -37,7 +36,8 @@ type kafkaMessage struct {
 
 func (ep *kafkaEndpoint) ToNodeId() string {
   ip := strings.Replace(ep.IP, ".", "_", -1)
-  return fmt.Sprintf("%s--%d", ip, ep.Port)
+  // return fmt.Sprintf("%s--%d", ip, ep.Port)
+  return ip
 }
 
 func SetupKafkaTraffic(bc Broadcaster, address, topic string) {

@@ -7,7 +7,11 @@ class ChunkedTrafficSource {
   get traffic() {
     return this.chunks
       .filter(chunk => chunk.type === "traffic")
-      .flatMap(chunk => Rx.Observable.from(chunk.pings || []))
+
+      .flatMap(chunk => Rx.Observable
+        .from(chunk.pings || [])
+        .distinct(packet => packet.source + packet.target))
+
       .flatMap(packet => {
         const count = this.pingCount(packet);
         const duration = this.durationOf(packet);
