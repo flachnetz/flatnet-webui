@@ -31,6 +31,9 @@ window.onload = () => {
   SearchView.registerShortcut(search);
   registerGraphSearchView(graph, search);
 
-  var info = new InfoPanel(document.body, graph.rxSelection);
-
+  var info = new InfoPanel(document.body, graph.rxSelection
+    .combineLatest(graph.rxSelectionMarker)
+    .filter(([nodes, mark]) => mark && nodes.length === 0 || !mark && nodes.length > 0)
+    .map(([nodes, mark]) => nodes)
+    .startWith([]));
 };

@@ -33,7 +33,7 @@ class InfoPanel extends View {
   }
 
   render() {
-    const $root = parseHtml(`
+    const $root = this.$root = parseHtml(`
       <div class="info">
         <h1 class="info__header">Info</h1>
         <div class="info__nodes"></div>
@@ -45,9 +45,23 @@ class InfoPanel extends View {
     this.rxNodes.subscribe(nodes => {
       Array.from(this.$nodes.childNodes).forEach(node => View.of(node).destroy());
       nodes.forEach(node => new NodeInfoView(this.$nodes, node));
+
+      this.hidden = (nodes.length == 0);
     });
 
     return $root;
+  }
+
+  set hidden(hidden) {
+    if(hidden) {
+      this.$root.classList.add("info--hidden")
+    } else {
+      this.$root.classList.remove("info--hidden")
+    }
+  }
+
+  get hidden() {
+    return this.$root.classList.contains("info--hidden");
   }
 }
 

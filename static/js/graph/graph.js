@@ -38,6 +38,10 @@ const GraphView = (() => {
       this.rxHoverNode = this._rxHoverNodeSubject
         .takeUntil(this.rxLifecycle)
         .distinctUntilChanged();
+
+      this._rxSelectionMarkerSubject = new Rx.BehaviorSubject(false);
+      this.rxSelectionMarker = this._rxSelectionMarkerSubject
+        .distinctUntilChanged();
     }
 
     render() {
@@ -143,11 +147,15 @@ const GraphView = (() => {
             st.width = bbox.width + "px";
             st.height = bbox.height + "px";
           })
+          
+          .doOnNext(() => this._rxSelectionMarkerSubject.onNext(true))
 
           .map(bbox => this._intersectingNodes(bbox))
 
           // hide at the end
-          .finally(() => this.$selection.style.display = "none"))
+          .finally(() => this.$selection.style.display = "none")
+          .finally(() => this._rxSelectionMarkerSubject.onNext(false)))
+        
 
         .subscribe(nodes => this.updateSelection(nodes));
       

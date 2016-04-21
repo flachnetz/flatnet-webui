@@ -1,5 +1,7 @@
 @import "colors"
 
+$info-panel-width: 15em
+
 .info
   position: absolute
 
@@ -7,11 +9,17 @@
   top: 0
 
   height: 100%
-  min-width: 15em
+  width: $info-panel-width
 
   border-left: 0.1em $color-primary solid
-  background: rgba($color-primary, 0.6)
+  background: rgba($color-primary, 0.75)
   font-size: 0.8em
+
+  transition: right 0.5s
+
+  &--hidden
+    right: -$info-panel-width
+
 
 
 .info__node
