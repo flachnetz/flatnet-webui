@@ -13,6 +13,9 @@ window.onload = () => {
 
     const {edge, reverse} = graph.getOrCreateEdge(sourceId, targetId);
     edge.ping(reverse);
+
+    graph.getOrCreateNode(sourceId).logTraffic(0, 1);
+    graph.getOrCreateNode(targetId).logTraffic(1, 0);
   });
 
   source.mapping.debounce(100).subscribe(mapping => {

@@ -9,6 +9,12 @@ const GraphNodeView = (() => {
       this.rxAlias = this._rxAliasSubject
         .distinctUntilChanged()
         .takeUntil(this.rxLifecycle);
+
+      this._rxDataReceivedSubject = new Rx.Subject(0);
+      this.rxDataReceived = this._rxDataReceivedSubject
+        .takeUntil(this.rxLifecycle)
+        .scan((sum, value) => sum + value, 0)
+        .shareReplay(1);
     }
 
     render() {
@@ -20,6 +26,12 @@ const GraphNodeView = (() => {
     destroy() {
       super.destroy();
       this._position.onCompleted();
+    }
+
+    logTraffic(incoming, outgoing) {
+      if(incoming) {
+        this._rxDataReceivedSubject.onNext(incoming);
+      }
     }
     
     /**

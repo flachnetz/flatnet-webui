@@ -14,16 +14,22 @@ class NodeInfoView extends View {
         <div>
           <strong>Alias:</strong> <input class="info__node__value info__node__value--alias">
         </div>
+        <div>
+          <strong>Received:</strong> <span class="info__node__value info__node__value--received"></span>
+        </div>
       </div>`);
 
-    this.$id = $root.querySelector(".info__node__value--id");
-    this.$id.innerText = this.node.id;
+    const $id = $root.querySelector(".info__node__value--id");
+    $id.innerText = this.node.id;
 
-    this.$alias = $root.querySelector(".info__node__value--alias");
-    this.node.rxAlias.subscribe(alias => this.$alias.value = alias);
+    const $received = $root.querySelector(".info__node__value--received");
+    this.node.rxDataReceived.subscribe(total => $received.innerText = total);
 
-    Rx.DOM.change(this.$alias)
-      .map(event => this.$alias.value)
+    const $alias = $root.querySelector(".info__node__value--alias");
+    this.node.rxAlias.subscribe(alias => $alias.value = alias);
+
+    Rx.DOM.change($alias)
+      .map(event => $alias.value)
       .subscribe(alias => this.node.alias = alias);
 
     return $root;
