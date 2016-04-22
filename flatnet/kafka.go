@@ -75,6 +75,7 @@ func SetupKafkaTraffic(bc Broadcaster, address, topic string) {
         }
 
         var pings []Ping
+        mappings := make(map[string]string)
         for _, kafkaPing := range content.Pings {
           if kafkaPing.Source.IP == "" || kafkaPing.Target.IP == "" {
             log.Println("No source or target ip.")
@@ -92,10 +93,22 @@ func SetupKafkaTraffic(bc Broadcaster, address, topic string) {
             Duration: int(content.Duration),
             Count: kafkaPing.Len,
           })
+
+          if kafkaPing.Source.Name != nil {
+            mappings[kafkaPing.Source.ToNodeId()] = kafkaPing.Source.Name
+          }
+
+          if kafkaPing.Source.Name != nil {
+            mappings[kafkaPing.Target.ToNodeId()] = kafkaPing.Target.Name
+          }
         }
 
         log.Println("Broadcast ping via hub")
         bc.BroadcastObject(TrafficMessage{TypeTraffic, pings})
+
+        if len(mappings) > 0 {
+          bc.BroadcastObject(Mapping{TypeMapping, mappings})
+        }
       }
     }
   }()
