@@ -1,0 +1,6 @@
+package: github.com/flachnetz/flatnet-webui
+import:
+- package: github.com/gorilla/handlers
+- package: github.com/gorilla/mux
+- package: github.com/gorilla/websocket
+- package: github.com/shopify/sarama

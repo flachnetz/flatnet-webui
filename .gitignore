@@ -46,5 +46,6 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 
-# Created by .ignore support plugin (hsz.mobi)
-flowly-ui
+/flatnet-webui
+/npm-debug.log
+/vendor

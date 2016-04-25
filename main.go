@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
+	"github.com/flachnetz/flatnet-webui/flatnet"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/oliverbestmann/flowly-ui/flatnet"
 	"io/ioutil"
 	"log"
 	"net/http"
